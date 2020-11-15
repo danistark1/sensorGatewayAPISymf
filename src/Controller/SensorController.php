@@ -60,7 +60,7 @@ class SensorController extends AbstractController
     public function getByName($name) {
         $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['room' => $name]);
         $response = new Response();
-        if ($room) {
+        if (!empty($room)) {
             $serializer = $this->get('serializer');
             $data = $serializer->serialize($room, 'json');
 
@@ -98,7 +98,6 @@ class SensorController extends AbstractController
 
         $date->setTimezone(new DateTimeZone('America/Toronto'));
         $date->format('Y-m-d H:i:s');
-        dump($date);
         $results  = $qb->select('p')
             ->from(RoomGateway::class, 'p')
             ->where('p.insert_date_time <= :date_from')
@@ -126,6 +125,9 @@ class SensorController extends AbstractController
      * Post weatherData.
      *
      * @Route("/weatherstationapi/",  methods={"POST"}, name="post_by_name")
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @return Response
+     * @throws \Exception
      */
     public function post(\Symfony\Component\HttpFoundation\Request $request) {
         $response = new Response();
