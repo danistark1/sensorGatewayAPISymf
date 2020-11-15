@@ -12,9 +12,11 @@ Symfony REST APIs for the weatherStation project https://github.com/danistark1/w
 # REST API Calls
 
 - POST weatherstationapi/
+
 Everytime a record is posted, a call to 
 
 - DELETE weatherstationapi/{interval}
+
 that deletes all weather data older interval (default is 1 day).
 
 ex.
