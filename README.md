@@ -20,13 +20,14 @@ Everytime a record is posted, a call to
 that deletes all weather data older interval (default is 1 day).
 
 ex.
+```json
 {
     "room": "outside",
     "temperature": 3,
     "humidity": 45,
     "station_id": 6126
 }
-
+```
 - GET weatherstationapi/{station_ID} by_station_id
 - GET weatherstationapi/{name} by_room_name
 
