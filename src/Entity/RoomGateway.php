@@ -94,10 +94,10 @@ class RoomGateway
     }
 
     /**
-     * @param int $temperature
+     * @param float $temperature
      * @return $this
      */
-    public function setTemperature(int $temperature): self {
+    public function setTemperature(float $temperature): self {
         $this->temperature = $temperature;
         return $this;
     }
