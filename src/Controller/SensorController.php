@@ -65,7 +65,6 @@ class SensorController extends AbstractController
             $data = $serializer->serialize($room, 'json');
 
             $response->setContent($data);
-            //$response->headers->set('Stark', 'Test');
             return $response;
         } else {
             $response->setContent('No weather data found for '.$name);
