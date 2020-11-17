@@ -10,9 +10,13 @@ Symfony REST APIs for the weatherStation project https://github.com/danistark1/w
 
 # REST API Calls
 
+**POST**
+
 - POST weatherstationapi/
 
 Everytime a record is posted, a call to 
+
+**DELETE**
 
 - DELETE weatherstationapi/{interval}
 
@@ -27,6 +31,9 @@ ex.
     "station_id": 6126
 }
 ```
+
+**GET**
+
 - GET weatherstationapi/{station_ID} by_station_id
 - GET weatherstationapi/{name} by_room_name
 
