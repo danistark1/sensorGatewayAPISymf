@@ -48,8 +48,8 @@ class PostListener {
         //
         //
         $message = (new Email())
-            ->from('vantesla1@gmail.com')
-            ->to('dany.majdalani@gmail.com')
+            ->from('')
+            ->to('')
             ->html(
                 $this->templating->render(
                     'sensor/weatherStationReport.twig.html',
