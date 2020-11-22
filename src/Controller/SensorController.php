@@ -109,7 +109,7 @@ class SensorController extends AbstractController
                 $entityManager->remove($result);
                 $entityManager->flush();
             }
-            $response->setStatusCode(202);
+            $response->setStatusCode(204);
         } else {
             $response->setStatusCode(404);
         }
