@@ -2,10 +2,29 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="./css/styles.css">
+    {% block stylesheets %}
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    {% endblock %}
+
 </head>
 <body>
-<h3>New task created!</h3>
-{{WeatherData.room}}
+<h3>Weather Report {{Date}}</h3>
+
+<table id="weatherData">
+    <thead>
+    {{ Header }}
+    </thead>
+    <tbody>
+<tr>
+    <td>{{ weatherDataOutside}}</td>
+</tr>
+<tr>
+    <td>{{weatherDataInside}}</td>
+</tr>
+
+<tr>
+    <td>{{weatherDataBasement}}</td>
+</tr>
+</table>
 </body>
 </html>
