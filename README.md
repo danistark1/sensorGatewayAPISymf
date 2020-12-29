@@ -19,6 +19,9 @@ DATABASE_URL=mysql://root:@database:3306/weatherStation
 - TO_EMAIL=
 - EMAIL_TITLE="Your weather report title"
 
+# Sample weather report
+![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
+
 # Usage / REST API Calls
 
 **POST**
