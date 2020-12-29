@@ -49,12 +49,26 @@ class SensorController extends AbstractController
      * Garage: 8166
      * Living-room: 15043
      * Outside: 12154
-     *
+     * @param int $id The room id.
      * @Route("/weatherstationapi/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
      */
-    public function getByID($id) {
-        $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['station_id' => $id]);
-        return $this->json([$room]);
+    public function getByID(int $id) {
+        $response = new Response();
+        $valid = $this->validateStationID($id);
+
+        if (!$valid) {
+            $response->setContent('Invalid Room ID.');
+            $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+
+        } else {
+            $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['station_id' => $id]);
+            $serializer = $this->get('serializer');
+            $data = $serializer->serialize($room, 'json');
+            $response->setContent($data);
+            $response->setStatusCode(self::STATUS_OK);
+        }
+
+        return $response;
     }
 
     /**
@@ -64,18 +78,24 @@ class SensorController extends AbstractController
      * @Route("weatherstationapi/{name}", methods={"GET"}, requirements={"name"="\w+"}, name="get_by_name")
      */
     public function getByName(string $name): Response {
-        $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['room' => $name]);
         $response = new Response();
-        if (!empty($room)) {
-            $serializer = $this->get('serializer');
-            $data = $serializer->serialize($room, 'json');
-            $response->setContent($data);
-            return $response;
-        } else {
-            $response->setContent('No weather data found for '.$name);
-            $response->setStatusCode(self::STATUS_NOT_FOUND);
-            return $response;
+        $valid = $this->validateRoom($name);
+        if (!$valid) {
+            $response->setContent('Invalid Room Name.');
+            $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
         }
+         else {
+             $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['room' => $name]);
+             $serializer = $this->get('serializer');
+             if (!empty($room)) {
+                 $data = $serializer->serialize($room, 'json');
+                 $response->setContent($data);
+             } else {
+                 $response->setContent('No weather data found.');
+                 $response->setStatusCode(self::STATUS_NOT_FOUND);
+             }
+         }
+        return $response;
     }
 
 
