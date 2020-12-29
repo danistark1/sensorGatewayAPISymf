@@ -1,6 +1,8 @@
 <p align="center">
     <b> 🌧 weatherStationApiSymfony 🌧</b>
-      <img src="https://github.com/danistark1/weatherStationApiSymfony/blob/main/animatedCloud.gif" />
+</p>
+<p align="center">
+    <img src="https://github.com/danistark1/weatherStationApiSymfony/blob/main/animatedCloud.gif" />
 </p>
 
 
