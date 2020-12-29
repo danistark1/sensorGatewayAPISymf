@@ -35,6 +35,11 @@ class SensorController extends AbstractController
     const STATION_ID_LIVING_ROOM = 15043;
     const STATION_ID_OUTSIDE = 12154;
     const STATION_ID_GARAGE = 8166;
+    const STATUS_OK = 200;
+    const STATUS_NO_CONTENT = 204;
+    const STATUS_VALIDATION_FAILED = 400;
+    const STATUS_NOT_FOUND = 404;
+
 
     /**
      * Get weatherData by stationID
@@ -68,7 +73,7 @@ class SensorController extends AbstractController
             return $response;
         } else {
             $response->setContent('No weather data found for '.$name);
-            $response->setStatusCode(404);
+            $response->setStatusCode(self::STATUS_NOT_FOUND);
             return $response;
         }
     }
@@ -85,7 +90,7 @@ class SensorController extends AbstractController
      */
     public function delete(int $interval = 1) {
         $response = new Response();
-        $response->setStatusCode(200);
+        $response->setStatusCode(self::STATUS_OK);
         $entityManager = $this->getDoctrine()->getManager();
         $qb = $entityManager->createQueryBuilder();
 
@@ -109,9 +114,9 @@ class SensorController extends AbstractController
                 $entityManager->remove($result);
                 $entityManager->flush();
             }
-            $response->setStatusCode(204);
+            $response->setStatusCode(self::STATUS_NO_CONTENT);
         } else {
-            $response->setStatusCode(404);
+            $response->setStatusCode(self::STATUS_NOT_FOUND);
         }
 
         $serializer = $this->get('serializer');
@@ -143,7 +148,7 @@ class SensorController extends AbstractController
         $validStation = $this->validateStationID($parameters['station_id']);
         if (!$valid || !$validRoom || !$validStation) {
             $response->setContent('Validation failed');
-            $response->setStatusCode(404);
+            $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
             return $response;
         }
 
@@ -165,7 +170,7 @@ class SensorController extends AbstractController
         // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
         // keeping weather data for 24hrs.
         $this->delete($interval);
-        $response->setStatusCode(200);
+        $response->setStatusCode(self::STATUS_OK);
         return $response;
     }
 
