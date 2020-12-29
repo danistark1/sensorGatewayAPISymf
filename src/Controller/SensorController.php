@@ -8,6 +8,7 @@ use App\Entity\RoomGateway;
 use App\Repository\RoomGatewayRepository;
 use DateInterval;
 use DateTime;
+use Exception;
 use http\Client\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -66,15 +67,11 @@ class SensorController extends AbstractController {
     /**
      * Get weatherData by stationID
      *
-     * Basement: 3026
-     * Beddroom: 6126
-     * Garage: 8166
-     * Living-room: 15043
-     * Outside: 12154
      * @param int $id The room id.
      * @Route("/weatherstationapi/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
+     * @return Response
      */
-    public function getByID(int $id) {
+    public function getByID(int $id): Response {
         $response = new Response();
         $valid = $this->validateStationID($id);
 
@@ -98,6 +95,7 @@ class SensorController extends AbstractController {
      *
      * @param string $name Room name
      * @Route("weatherstationapi/{name}", methods={"GET"}, requirements={"name"="\w+"}, name="get_by_name")
+     * @return Response
      */
     public function getByName(string $name): Response {
         $response = new Response();
@@ -120,7 +118,6 @@ class SensorController extends AbstractController {
         return $response;
     }
 
-
     /**
      * Delete weather records based on the set interval.
      * Default is 1 day.
@@ -128,9 +125,9 @@ class SensorController extends AbstractController {
      * @Route("weatherstationapi/delete/{interval}", methods={"DELETE"}, name="task_delete")
      * @param int $interval The interval to delete records from
      * @return Response
-     * @throws \Exception
+     * @throws Exception
      */
-    public function delete(int $interval = 1) {
+    public function delete(int $interval = 1): Response {
         $response = new Response();
         $response->setStatusCode(self::STATUS_OK);
         $entityManager = $this->getDoctrine()->getManager();
@@ -174,7 +171,7 @@ class SensorController extends AbstractController {
      * @param \Symfony\Component\HttpFoundation\Request $request
      * @param int $interval Interval for sending weather report emails.
      * @return Response
-     * @throws \Exception
+     * @throws Exception
      */
     public function post(\Symfony\Component\HttpFoundation\Request $request, int $interval = 1): Response {
         $response = new Response();
@@ -226,7 +223,7 @@ class SensorController extends AbstractController {
      * @param array $parameters
      * @return bool
      */
-    private function validatePost(array $parameters) {
+    private function validatePost(array $parameters): bool {
         $valid = true;
         $valid = (isset($parameters['temperature']) &&  isset($parameters['humidity']) && isset($parameters['station_id']) && isset($parameters['room'])) ? $valid : !$valid;
         return $valid;

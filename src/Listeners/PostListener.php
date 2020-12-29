@@ -68,7 +68,7 @@ class PostListener {
     }
 
     /**
-     * Massage data before sending.
+     * Massage data before sending to twig
      *
      * @param LifecycleEventArgs $args
      * @param SensorController $sensorController
