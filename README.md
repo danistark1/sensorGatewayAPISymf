@@ -51,4 +51,4 @@ ex.
 - GET weatherstationapi/{station_ID} by_station_id
 - GET weatherstationapi/{name} by_room_name
 
-
+[![forthebadge](https://forthebadge.com/images/badges/works-on-my-machine.svg)](https://forthebadge.com)
