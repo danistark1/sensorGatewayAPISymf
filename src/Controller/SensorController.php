@@ -1,6 +1,6 @@
 <?php
 /**
- * @author Dani S <danistark.ca@gmail.com>
+ * @author Dani Stark.
  */
 namespace App\Controller;
 
@@ -55,15 +55,15 @@ class SensorController extends AbstractController
     /**
      * Get weatherData by room name.
      *
+     * @param string $name Room name
      * @Route("weatherstationapi/{name}", methods={"GET"}, requirements={"name"="\w+"}, name="get_by_name")
      */
-    public function getByName($name) {
+    public function getByName(string $name): Response {
         $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['room' => $name]);
         $response = new Response();
         if (!empty($room)) {
             $serializer = $this->get('serializer');
             $data = $serializer->serialize($room, 'json');
-
             $response->setContent($data);
             return $response;
         } else {
@@ -125,10 +125,11 @@ class SensorController extends AbstractController
      *
      * @Route("/weatherstationapi/",  methods={"POST"}, name="post_by_name")
      * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param int $interval Interval for sending weather report emails.
      * @return Response
      * @throws \Exception
      */
-    public function post(\Symfony\Component\HttpFoundation\Request $request) {
+    public function post(\Symfony\Component\HttpFoundation\Request $request, int $interval = 1) {
         $response = new Response();
         // turn request data into an array
         $parameters = json_decode($request->getContent(), true);
@@ -148,7 +149,6 @@ class SensorController extends AbstractController
 
         $entityManager = $this->getDoctrine()->getManager();
 
-
         $roomGateway = new RoomGateway();
         $roomGateway->setRoom($parameters['room']);
         $roomGateway->setHumidity($parameters['humidity']);
@@ -162,9 +162,9 @@ class SensorController extends AbstractController
         $entityManager->persist($roomGateway);
         $entityManager->flush();
 
-        // Everytime a record is inserted, we want to call the delete API to delete records that are olders than 1 day.
-        // This way we only keep data for 24hrs.
-        $this->delete(1);
+        // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
+        // keeping weather data for 24hrs.
+        $this->delete($interval);
         $response->setStatusCode(200);
         return $response;
     }
