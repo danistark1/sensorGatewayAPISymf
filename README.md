@@ -1,4 +1,4 @@
-# weatherStationApiSymfony
+# weatherStationApiSymfony 🌧 🔌
 
 Symfony REST APIs for the weatherStation project https://github.com/danistark1/weatherStation
 
