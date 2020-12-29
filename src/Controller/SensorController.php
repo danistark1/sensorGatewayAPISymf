@@ -22,24 +22,46 @@ use DateTimeZone;
  *
  * @package App\Controller
  */
-class SensorController extends AbstractController
-{
+class SensorController extends AbstractController {
+
+    // Room Names
     const ROOM_BEDROOM = 'bedroom';
     const ROOM_GARAGE = 'garage';
     const ROOM_LIVING_ROOM = 'living-room';
     const ROOM_BASEMENT = 'basement';
     const ROOM_OUTSIDE = 'outside';
 
+    // Room IDs
     const STATION_ID_BEDROOM = 6126;
     const STATION_ID_BASEMENT = 3026;
     const STATION_ID_LIVING_ROOM = 15043;
     const STATION_ID_OUTSIDE = 12154;
     const STATION_ID_GARAGE = 8166;
+
+    // Status Codes
     const STATUS_OK = 200;
     const STATUS_NO_CONTENT = 204;
     const STATUS_VALIDATION_FAILED = 400;
     const STATUS_NOT_FOUND = 404;
 
+    // Valid station IDs/Names, used for validation.
+    /* @var array $validStations Valid room names/Ids*/
+    public $validStations = [
+        'stationName' => [
+        self::ROOM_BEDROOM,
+        self::ROOM_GARAGE,
+        self::ROOM_LIVING_ROOM,
+        self::ROOM_BASEMENT,
+        self::ROOM_OUTSIDE,
+            ],
+        'stationID' => [
+            self::STATION_ID_BEDROOM,
+            self::STATION_ID_BASEMENT,
+            self::STATION_ID_LIVING_ROOM,
+            self::STATION_ID_OUTSIDE,
+            self::STATION_ID_GARAGE,
+        ]
+    ];
 
     /**
      * Get weatherData by stationID
@@ -163,99 +185,76 @@ class SensorController extends AbstractController
         if ($parameters && is_array($parameters)) {
             $valid = $this->validatePost($parameters);
         }
-
-        $validRoom = $this->validateRoom($parameters['room']);
-        $validStation = $this->validateStationID($parameters['station_id']);
-        if (!$valid || !$validRoom || !$validStation) {
-            $response->setContent('Validation failed');
+        if (!$valid) {
             $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-            return $response;
+            $response->setContent('Post validation failed.');
+        } else {
+            $validRoom = $this->validateRoom($parameters['room']);
+            $validStation = $this->validateStationID($parameters['station_id']);
+            if (!$valid || !$validRoom || !$validStation) {
+                $response->setContent('Validation failed');
+                $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+                return $response;
+            }
+
+            $entityManager = $this->getDoctrine()->getManager();
+
+            $roomGateway = new RoomGateway();
+            $roomGateway->setRoom($parameters['room']);
+            $roomGateway->setHumidity($parameters['humidity']);
+            $roomGateway->setTemperature($parameters['temperature']);
+            $roomGateway->setStationId($parameters['station_id']);
+            $dt = new \DateTime();
+            $dt->format('Y-m-d H:i:s');
+            $dt->setTimezone(new DateTimeZone('America/Toronto'));
+            $roomGateway->setInsertDateTime($dt);
+
+            $entityManager->persist($roomGateway);
+            $entityManager->flush();
+
+            // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
+            // keeping weather data for 24hrs.
+            $this->delete($interval);
+            $response->setStatusCode(self::STATUS_OK);
         }
-
-        $entityManager = $this->getDoctrine()->getManager();
-
-        $roomGateway = new RoomGateway();
-        $roomGateway->setRoom($parameters['room']);
-        $roomGateway->setHumidity($parameters['humidity']);
-        $roomGateway->setTemperature($parameters['temperature']);
-        $roomGateway->setStationId($parameters['station_id']);
-        $dt = new \DateTime();
-        $dt->format('Y-m-d H:i:s');
-        $dt->setTimezone(new DateTimeZone('America/Toronto'));
-        $roomGateway->setInsertDateTime($dt);
-
-        $entityManager->persist($roomGateway);
-        $entityManager->flush();
-
-        // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
-        // keeping weather data for 24hrs.
-        $this->delete($interval);
-        $response->setStatusCode(self::STATUS_OK);
         return $response;
     }
 
     /**
+     * Validate station post data.
+     *
      * @param array $parameters
      * @return bool
      */
-    private function validatePost(array $parameters): bool {
+    private function validatePost(array $parameters) {
         $valid = true;
-        $validationResults = [
-            'temperature' => 0,
-            'humidity' => 0,
-            'station_id' => 0,
-            'room' => 0
-        ];
-        if (!isset($parameters['temperature'])){
-            $validationResults['temperature'] = 1;
-        }
-
-        if (!isset($parameters['humidity'])) {
-            $validationResults['humidity'] = 1;
-        }
-        if (!isset($parameters['station_id'])){
-            $validationResults['station_id'] = 1;
-        }
-        if (!isset($parameters['room'])){
-            $validationResults['room'] = 1;
-        }
-      if (in_array(1, $validationResults)){
-          $valid = false;
-      }
-      return $valid;
+        $valid = (isset($parameters['temperature']) &&  isset($parameters['humidity']) && isset($parameters['station_id']) && isset($parameters['room'])) ? $valid : !$valid;
+        return $valid;
     }
 
     /**
-     * @param string $room
+     * Validate station name.
+     *
+     * @param string $station
      * @return bool
      */
-    private function validateRoom(string $room): bool {
+    private function validateRoom(string $station): bool {
         $valid = true;
-        if(
-            $room !== self::ROOM_BASEMENT &&
-            $room !== self::ROOM_LIVING_ROOM &&
-            $room !== self::ROOM_GARAGE &&
-            $room !== self::ROOM_BEDROOM &&
-            $room !== self::ROOM_OUTSIDE
-        ) {
+        if(!in_array($station, $this->validStations['stationName'])) {
             $valid = false;
         }
         return $valid;
     }
 
     /**
+     * Validate station id.
+     *
      * @param int $stationID
      * @return bool
      */
     private function validateStationID(int $stationID): bool {
         $valid = true;
-        if(
-            $stationID !== self::STATION_ID_BASEMENT &&
-            $stationID !== self::STATION_ID_BEDROOM &&
-            $stationID !== self::STATION_ID_GARAGE &&
-            $stationID !== self::STATION_ID_LIVING_ROOM &&
-            $stationID !== self::STATION_ID_OUTSIDE
-        ) {
+        if(!in_array($stationID, $this->validStations['stationID'])) {
             $valid = false;
         }
         return $valid;
