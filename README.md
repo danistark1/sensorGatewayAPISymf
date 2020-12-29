@@ -24,9 +24,15 @@ DATABASE_URL=mysql://root:@database:3306/weatherStation
 - FROM_EMAIL=
 - TO_EMAIL=
 - EMAIL_TITLE="Your weather report title"
+- TIMEZONE="Default is America/Toronto"
+- FIRST_REPORT_TIME="Default 07:00:00"
+- SECOND_REPORT_TIME="Default 20:00:00"
 
-# Sample weather report
+# Weather Report
+
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
+
+Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using FIRST_REPORT_TIME & SECOND_REPORT_TIME from .env file).
 
 # Usage / REST API Calls
 
