@@ -14,11 +14,11 @@ Symfony REST APIs for the weatherStation project https://github.com/danistark1/w
 - bin/console doctrine:database:create
 - bin/console doctrine:migrations:migrate
 
-.env
+**.env**
 
 DATABASE_URL=mysql://root:@database:3306/weatherStation
 
-# Email Configuration (For weather report)
+ **Email Configuration (For weather report)**
 
 - MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 - FROM_EMAIL=
