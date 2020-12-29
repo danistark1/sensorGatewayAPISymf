@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {% block stylesheets %}
+        <style>{{ source('sensor/style.css') }}</style>
+    {% endblock %}
+</head>
+<body>
+{% block body %}
+<h3>Weather Report </h3>
+
+<table id="weatherData" class="fl-table">
+    <thead>
+    <tr>
+        <th>Room</th>
+        <th>Temperature</th>
+        <th>Humidity</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for room, sensorData in weatherData%}
+<tr>
+{#    should be#}
+{#    Room 	Temperature 	Humidity#}
+    <td>{{ room }}</td>
+    <td>{{ sensorData['temperature']|e }}</td>
+    <td>{{ sensorData['humidity']|e }}</td>
+</tr>
+    {% endfor %}
+</table>
+</body>
+{% endblock %}
+</html>

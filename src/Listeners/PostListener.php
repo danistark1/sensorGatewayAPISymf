@@ -1,4 +1,7 @@
 <?php
+/**
+ * @author Dani Stark.
+ */
 namespace App\Listeners;
 
 use App\Controller\SensorController;
@@ -7,71 +10,94 @@ use Doctrine\ORM\Event\LifecycleEventArgs;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 
+/**
+ * Class PostListener
+ */
 class PostListener {
 
+    /**
+     * @var \Twig\Environment
+     */
     public $templating;
+    /**
+     * @var MailerInterface
+     */
     public $mailer;
 
+    /**
+     * PostListener constructor.
+     *
+     * @param \Twig\Environment $templating
+     * @param MailerInterface $mailer
+     */
     public function __construct(\Twig\Environment $templating, MailerInterface $mailer) {
-
         $this->templating = $templating;
         $this->mailer = $mailer;
     }
 
+    /**
+     * Post listener: Listens for any post made in the SensorController.
+     *
+     * @param LifecycleEventArgs $args
+     * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
+     */
     public function postPersist(LifecycleEventArgs $args) {
         $entity = $args->getObject();
         $sensorController = new SensorController();
-        // only act on some "Product" entity
+        // only act on "Room" entity
         if (!$entity instanceof RoomGateway) {
             return;
         }
 
-        $entityManager = $args->getObjectManager();
-
-        // Get current weather data,
-        $weatherDataOutside = $entityManager->getRepository(RoomGateway::class)->findBy(['station_id' => $sensorController::STATION_ID_OUTSIDE]);
-        $weatherDataLivingRoom = $entityManager->getRepository(RoomGateway::class)->findBy(['station_id' => $sensorController::STATION_ID_LIVING_ROOM]);
-        $weatherDataGarage = $entityManager->getRepository(RoomGateway::class)->findBy(['station_id' => $sensorController::STATION_ID_GARAGE]);
-        $weatherDataBedroom = $entityManager->getRepository(RoomGateway::class)->findBy(['station_id' => $sensorController::STATION_ID_BEDROOM]);
-        $weatherDataBasement = $entityManager->getRepository(RoomGateway::class)->findBy(['station_id' => $sensorController::STATION_ID_BASEMENT]);
-
-        // Get Date
-        $date = $weatherDataOutside[0]->getInsertDateTime()->format('Y-m-d H:i:s');
-
-        // Get Temp Data
-        $tempOutside = $weatherDataOutside[0]->getTemperature();
-        $tempLivingRoom = $weatherDataLivingRoom[0]->getTemperature();
-        //dump($weatherDataLivingRoom);
-        $tempGarage = $weatherDataGarage[0]->getTemperature();
-        $tempBedroom = $weatherDataBedroom[0]->getTemperature();
-        $tempBasement = $weatherDataBasement[0]->getTemperature();
-
-        // Get Humidity data
-        $humidOutside = $weatherDataOutside[0]->getHumidity();
-        $humidLivingRoom = $weatherDataLivingRoom[0]->getHumidity();
-        $humidGarage = $weatherDataGarage[0]->getHumidity();
-        $humidBedroom = $weatherDataBedroom[0]->getHumidity();
-        $humidBasement = $weatherDataBasement[0]->getHumidity();
-
-
-
+        $massagedData = $this->prepareData($args, $sensorController);
         $message = (new Email())
-            ->from('vantesla1@gmail.com')
-            ->to('danistark.ca@gmail.com')
-            ->subject('Weather Station Report ')
+            ->from($_ENV["FROM_EMAIL"])
+            ->to($_ENV["TO_EMAIL"])
+            ->subject($_ENV["EMAIL_TITLE"])
             ->html(
                 $this->templating->render(
-                    'base.html.twig',
-                    [
-                        'Date'=> $date,
-                        'Header' => 'Room'.' Temperature '.' Humidity ',
-                        'weatherDataOutside' => 'Outside'.' '. $tempOutside.' '.$humidOutside,
-                        'weatherDataInside' => 'Inside'.' '. $tempLivingRoom.' '.$humidLivingRoom,
-                        'weatherDataBasement' => 'Basement'.' '. $tempBasement.' '.$humidBasement,
-                    ]
+                    '/sensor/weatherStationReport.html.twig',
+                    $massagedData
                 ),
                 'text/html'
             );
         $this->mailer->send($message);
+    }
+
+    /**
+     * Massage data before sending.
+     *
+     * @param LifecycleEventArgs $args
+     * @param SensorController $sensorController
+     * @return array[]
+     */
+    private function prepareData(LifecycleEventArgs $args, SensorController $sensorController): array {
+
+        $entityManager = $args->getObjectManager();
+        // Construct station IDs array.
+        $stationIDs = [
+            'outside' => $sensorController::STATION_ID_OUTSIDE,
+            'living-room' => $sensorController::STATION_ID_LIVING_ROOM,
+            'garage' => $sensorController::STATION_ID_GARAGE,
+            'bedroom' => $sensorController::STATION_ID_BEDROOM,
+            'basement' => $sensorController::STATION_ID_BASEMENT
+        ];
+        // Remove any invalid entries before calling temp & humidity methods on an empty array.
+        $prepareData = $weatherData =  [];
+        foreach ($stationIDs as $room => $stationID) {
+            $roomData = $entityManager->getRepository(RoomGateway::class)->findBy(['station_id' => $stationID]);
+            if(!empty($roomData)) {
+                $prepareData[$room] = [
+                    'temperature' => $roomData[0]->getTemperature(),
+                    'humidity' => $roomData[0]->getHumidity()
+                    ];
+            }
+        }
+        $weatherData = ['weatherData' => $prepareData];
+        // Data ready to be sent to twig.
+        return $weatherData;
     }
 }

@@ -1,6 +1,7 @@
 <?php
-
-
+/**
+ * @author Dani Stark.
+ */
 namespace App;
 
 use Symfony\Component\Mailer\MailerInterface;
