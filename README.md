@@ -1,4 +1,8 @@
-# weatherStationApiSymfony 🌧 🔌
+<p align="center">
+    <b> 🌧 weatherStationApiSymfony 🌧</b>
+      <img src="https://github.com/danistark1/weatherStationApiSymfony/blob/main/animatedCloud.gif" />
+</p>
+
 
 Symfony REST APIs for the weatherStation project https://github.com/danistark1/weatherStation
 
