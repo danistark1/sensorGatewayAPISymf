@@ -176,12 +176,12 @@ class SensorController extends AbstractController {
      * @return Response
      * @throws \Exception
      */
-    public function post(\Symfony\Component\HttpFoundation\Request $request, int $interval = 1) {
+    public function post(\Symfony\Component\HttpFoundation\Request $request, int $interval = 1): Response {
         $response = new Response();
         // turn request data into an array
         $parameters = json_decode($request->getContent(), true);
 
-        $valid = true;
+        $valid = false;
         if ($parameters && is_array($parameters)) {
             $valid = $this->validatePost($parameters);
         }
