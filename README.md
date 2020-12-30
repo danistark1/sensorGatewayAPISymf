@@ -38,24 +38,31 @@ Readings from all configured sensors is sent in an email, twice a day (by defaul
 
 **Get readings by Station ID**
 
-Get station readings by its defined id
-
 - GET weatherstationapi/{station_ID} by_station_id
+
+Defined IDs in
 
 [SensorController.php#L36](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L36)
 
-**Get readings by Station Name**
+```php
+    // Room IDs
+    const STATION_ID_BEDROOM = 6126;
+    const STATION_ID_BASEMENT = 3026;
+    const STATION_ID_LIVING_ROOM = 15043;
+    const STATION_ID_OUTSIDE = 12154;
+    const STATION_ID_GARAGE = 8166;
+```
 
-Get station readings by its defined name
+**Get readings by Station Name**
 
 - GET weatherstationapi/{name}
 
-Currently defined names in
+Defined names in
 
 [SensorController.php#L29](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L29)
 
-
 ```php
+    // Room Names
     const ROOM_BEDROOM = 'bedroom';
     const ROOM_GARAGE = 'garage';
     const ROOM_LIVING_ROOM = 'living-room';
@@ -65,9 +72,25 @@ Currently defined names in
 
 **POST**
 
+**Post sensor readings**
+
 - POST weatherstationapi/
 
-Everytime a record is posted, a call to 
+**Expected post**
+
+```json
+{
+    "room": "garage",
+    "temperature": 3,
+    "humidity": 67,
+    "station_id": 6126
+}
+```
+
+Everytime a record is posted:
+
+- Checks if an old record needs to be deleted (records older than 1 day are deleted) [SensorController.php#L214](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L214)
+- Checks if a weather report needs to be sent [PostListener.php#L54](https://github.com/danistark1/weatherStationApiSymfony/blob/5b274a2fa9e151e37a3793e3eb838863ccc673bd/src/Listeners/PostListener.php#L54)
 
 **DELETE**
 
