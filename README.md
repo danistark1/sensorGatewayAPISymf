@@ -27,6 +27,7 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 - TIMEZONE="Default is America/Toronto"
 - FIRST_REPORT_TIME="Default 07:00:00"
 - SECOND_REPORT_TIME="Default 20:00:00"
+- KEEP_RECORDS_FOR=1 (Everytime a new record is added to the db, readings older than the defined interval will be deleted)
 
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
 
@@ -89,25 +90,13 @@ Defined names in
 
 Everytime a record is posted:
 
-- Checks if an old record needs to be deleted (records older than 1 day are deleted) [SensorController.php#L214](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L214)
+- Checks if an old record needs to be deleted (records older than the defined interval are deleted) [SensorController.php#L214](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L214)
 - Checks if a weather report needs to be sent [PostListener.php#L54](https://github.com/danistark1/weatherStationApiSymfony/blob/5b274a2fa9e151e37a3793e3eb838863ccc673bd/src/Listeners/PostListener.php#L54)
 
 **DELETE**
 
 - DELETE weatherstationapi/{interval}
 
-that deletes all weather data older than interval (default is 1 day).
-
-ex.
-```json
-{
-    "room": "outside",
-    "temperature": 3,
-    "humidity": 45,
-    "station_id": 6126
-}
-```
-
-
+Deletes all weather data older than interval (default is 1 day).
 
 [![forthebadge](https://forthebadge.com/images/badges/open-source.svg)](https://forthebadge.com)
