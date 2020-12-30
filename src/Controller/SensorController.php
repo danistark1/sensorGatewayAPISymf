@@ -211,7 +211,7 @@ class SensorController extends AbstractController {
 
             // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
             // keeping weather data for 24hrs.
-            $this->delete($interval);
+            $this->delete($_ENV["KEEP_RECORDS_FOR"] ?? $interval);
             $response->setStatusCode(self::STATUS_OK);
         }
         return $response;
