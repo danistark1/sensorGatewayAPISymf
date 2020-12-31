@@ -26,12 +26,12 @@ class RoomGateway
     private $room;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="float")
      */
     private $temperature;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="float")
      */
     private $humidity;
 
@@ -60,16 +60,16 @@ class RoomGateway
     }
 
     /**
-     * @return int|null
+     * @return float|null
      */
-    public function getTemperature(): ?int {
+    public function getTemperature(): ?float {
         return $this->temperature;
     }
 
     /**
-     * @return int|null
+     * @return float|null
      */
-    public function getHumidity(): ?int {
+    public function getHumidity(): ?float {
         return $this->humidity;
     }
 
@@ -106,10 +106,10 @@ class RoomGateway
     }
 
     /**
-     * @param int $humidity
+     * @param float $humidity
      * @return $this
      */
-    public function setHumidity(int $humidity): self {
+    public function setHumidity(float $humidity): self {
         $this->humidity = $humidity;
         return $this;
     }
