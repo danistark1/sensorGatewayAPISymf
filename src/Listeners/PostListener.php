@@ -182,7 +182,13 @@ class PostListener {
         // Remove any invalid entries before calling temp & humidity methods on an empty array.
         $prepareData = $weatherData =  [];
         foreach ($stationIDs as $room => $stationID) {
-            $roomData = $entityManager->getRepository(RoomGateway::class)->findBy(['station_id' => $stationID]);
+            $roomData = $entityManager->getRepository(RoomGateway::class)->findBy(
+                [
+                    'station_id' => $stationID
+                ],
+                [
+                    'id' => 'DESC'
+                ]);
             if(!empty($roomData)) {
                 $prepareData[$room] = [
                     'temperature' => $roomData[0]->getTemperature(),
