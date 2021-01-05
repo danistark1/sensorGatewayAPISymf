@@ -23,10 +23,10 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 - MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 - FROM_EMAIL=
 - TO_EMAIL=
-- EMAIL_TITLE="Your weather report title"
+- EMAIL_TITLE="Your sensor readings report title"
 - TIMEZONE="Default is America/Toronto"
-- FIRST_REPORT_TIME="Default 07:00:00"
-- SECOND_REPORT_TIME="Default 20:00:00"
+- FIRST_REPORT_TIME="Default 07:00:00" (Sensor readings report first send time)
+- SECOND_REPORT_TIME="Default 20:00:00"(Sensor readings report second send time)
 - KEEP_RECORDS_FOR=1 (Everytime a new record is added to the db, readings older than the defined interval will be deleted)
 
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
