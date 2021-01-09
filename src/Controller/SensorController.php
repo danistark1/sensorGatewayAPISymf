@@ -25,44 +25,11 @@ use DateTimeZone;
  */
 class SensorController extends AbstractController {
 
-    // Room Names
-    const ROOM_BEDROOM = 'bedroom';
-    const ROOM_GARAGE = 'garage';
-    const ROOM_LIVING_ROOM = 'living-room';
-    const ROOM_BASEMENT = 'basement';
-    const ROOM_OUTSIDE = 'outside';
-
-    // Room IDs
-    const STATION_ID_BEDROOM = 6126;
-    const STATION_ID_BASEMENT = 3026;
-    const STATION_ID_LIVING_ROOM = 15043;
-    const STATION_ID_OUTSIDE = 12154;
-    const STATION_ID_GARAGE = 8166;
-
     // Status Codes
     const STATUS_OK = 200;
     const STATUS_NO_CONTENT = 204;
     const STATUS_VALIDATION_FAILED = 400;
     const STATUS_NOT_FOUND = 404;
-
-    // Valid station IDs/Names, used for validation.
-    /* @var array $validStations Valid room names/Ids*/
-    public $validStations = [
-        'stationName' => [
-        self::ROOM_BEDROOM,
-        self::ROOM_GARAGE,
-        self::ROOM_LIVING_ROOM,
-        self::ROOM_BASEMENT,
-        self::ROOM_OUTSIDE,
-            ],
-        'stationID' => [
-            self::STATION_ID_BEDROOM,
-            self::STATION_ID_BASEMENT,
-            self::STATION_ID_LIVING_ROOM,
-            self::STATION_ID_OUTSIDE,
-            self::STATION_ID_GARAGE,
-        ]
-    ];
 
     /**
      * Get weatherData by stationID
@@ -73,20 +40,30 @@ class SensorController extends AbstractController {
      */
     public function getByID(int $id): Response {
         $response = new Response();
-        $valid = $this->validateStationID($id);
-
-        if (!$valid) {
-            $response->setContent('Invalid Room ID.');
+        $sensorData = self::constructSensorData();
+        $validSensorConfig = empty($sensorData) ? false : true;
+        if (!$validSensorConfig) {
+            $response->setContent('No sensor data is configured in your environment file.');
             $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-
         } else {
-            $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['station_id' => $id]);
-            $serializer = $this->get('serializer');
-            $data = $serializer->serialize($room, 'json');
-            $response->setContent($data);
-            $response->setStatusCode(self::STATUS_OK);
-        }
+            $valid = $this->validateStationID($id, $sensorData);
+            if (!$valid) {
+                $response->setContent('Invalid Room ID.');
+                $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
 
+            } else {
+                $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['station_id' => $id]);
+                $serializer = $this->get('serializer');
+                $data = $serializer->serialize($room, 'json');
+                if (empty($room)){
+                    $response->setStatusCode(self::STATUS_NO_CONTENT);
+                } else {
+                    $response->setContent($data);
+                    $response->setStatusCode(self::STATUS_OK);
+                }
+
+            }
+        }
         return $response;
     }
 
@@ -99,22 +76,29 @@ class SensorController extends AbstractController {
      */
     public function getByName(string $name): Response {
         $response = new Response();
-        $valid = $this->validateRoom($name);
-        if (!$valid) {
-            $response->setContent('Invalid Room Name.');
+        $sensorData = self::constructSensorData();
+        $validSensorConfig = empty($sensorData) ? false : true;
+        if (!$validSensorConfig) {
+            $response->setContent('No sensor data is configured in your environment file.');
             $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+        } else {
+            $name = strtolower($name);
+            $valid = $this->validateRoom($name, $sensorData);
+            if (!$valid) {
+                $response->setContent('Invalid Room Name.');
+                $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+            } else {
+                $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['room' => $name]);
+                $serializer = $this->get('serializer');
+                if (!empty($room)) {
+                    $data = $serializer->serialize($room, 'json');
+                    $response->setContent($data);
+                } else {
+                    $response->setContent('No weather data found.');
+                    $response->setStatusCode(self::STATUS_NOT_FOUND);
+                }
+            }
         }
-         else {
-             $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['room' => $name]);
-             $serializer = $this->get('serializer');
-             if (!empty($room)) {
-                 $data = $serializer->serialize($room, 'json');
-                 $response->setContent($data);
-             } else {
-                 $response->setContent('No weather data found.');
-                 $response->setStatusCode(self::STATUS_NOT_FOUND);
-             }
-         }
         return $response;
     }
 
@@ -175,46 +159,71 @@ class SensorController extends AbstractController {
      */
     public function post(\Symfony\Component\HttpFoundation\Request $request, int $interval = 1): Response {
         $response = new Response();
-        // turn request data into an array
-        $parameters = json_decode($request->getContent(), true);
-
-        $valid = false;
-        if ($parameters && is_array($parameters)) {
-            $valid = $this->validatePost($parameters);
-        }
-        if (!$valid) {
+        $sensorData = self::constructSensorData();
+        $validSensorConfig = empty($sensorData) ? false : true;
+        if (!$validSensorConfig) {
+            $response->setContent('No sensor data is configured in your environment file.');
             $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-            $response->setContent('Post validation failed.');
         } else {
-            $validRoom = $this->validateRoom($parameters['room']);
-            $validStation = $this->validateStationID($parameters['station_id']);
-            if (!$valid || !$validRoom || !$validStation) {
-                $response->setContent('Validation failed');
-                $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-                return $response;
+
+
+            // turn request data into an array
+            $parameters = json_decode($request->getContent(), true);
+            $parameters = $this->normalizeData($parameters);
+
+            $valid = false;
+            if ($parameters && is_array($parameters)) {
+                $valid = $this->validatePost($parameters);
             }
+            if (!$valid) {
+                $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+                $response->setContent('Post validation failed.');
+            } else {
+                $validRoom = $this->validateRoom($parameters['room'], $sensorData);
+                $validStation = $this->validateStationID($parameters['station_id'], $sensorData);
+                if (!$valid || !$validRoom || !$validStation) {
+                    $response->setContent('Validation failed.');
+                    $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
 
-            $entityManager = $this->getDoctrine()->getManager();
+                    return $response;
+                }
 
-            $roomGateway = new RoomGateway();
-            $roomGateway->setRoom($parameters['room']);
-            $roomGateway->setHumidity($parameters['humidity']);
-            $roomGateway->setTemperature($parameters['temperature']);
-            $roomGateway->setStationId($parameters['station_id']);
-            $dt = new \DateTime();
-            $dt->format('Y-m-d H:i:s');
-            $dt->setTimezone(new DateTimeZone('America/Toronto'));
-            $roomGateway->setInsertDateTime($dt);
+                $entityManager = $this->getDoctrine()->getManager();
 
-            $entityManager->persist($roomGateway);
-            $entityManager->flush();
+                $roomGateway = new RoomGateway();
+                $roomGateway->setRoom($parameters['room']);
+                $roomGateway->setHumidity($parameters['humidity']);
+                $roomGateway->setTemperature($parameters['temperature']);
+                $roomGateway->setStationId($parameters['station_id']);
+                $dt = new \DateTime();
+                $dt->format('Y-m-d H:i:s');
+                $dt->setTimezone(new DateTimeZone('America/Toronto'));
+                $roomGateway->setInsertDateTime($dt);
 
-            // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
-            // keeping weather data for 24hrs.
-            $this->delete($_ENV["KEEP_RECORDS_FOR"] ?? $interval);
-            $response->setStatusCode(self::STATUS_OK);
+                $entityManager->persist($roomGateway);
+                $entityManager->flush();
+
+                // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
+                // keeping weather data for 24hrs.
+                $this->delete($_ENV["KEEP_RECORDS_FOR"] ?? $interval);
+                $response->setStatusCode(self::STATUS_OK);
+            }
         }
         return $response;
+    }
+
+    /**
+     * Normalize Post data
+     *
+     * @param array $parameters
+     * @return array Normalized Data
+     */
+    private function normalizeData(array $parameters): array {
+        $normalizedData = [];
+        foreach($parameters as $param => $value) {
+            $normalizedData += [strtolower($param) => $value];
+        }
+        return $normalizedData;
     }
 
     /**
@@ -233,11 +242,12 @@ class SensorController extends AbstractController {
      * Validate station name.
      *
      * @param string $station
+     * @param array $stationData
      * @return bool
      */
-    private function validateRoom(string $station): bool {
+    private function validateRoom(string $station, array $stationData): bool {
         $valid = true;
-        if(!in_array($station, $this->validStations['stationName'])) {
+        if (!isset($stationData[$station])) {
             $valid = false;
         }
         return $valid;
@@ -247,13 +257,33 @@ class SensorController extends AbstractController {
      * Validate station id.
      *
      * @param int $stationID
+     * @param array $stationData
      * @return bool
      */
-    private function validateStationID(int $stationID): bool {
+    private function validateStationID(int $stationID, array $stationData): bool {
         $valid = true;
-        if(!in_array($stationID, $this->validStations['stationID'])) {
+        $sensorData = array_flip($stationData);
+        if (!isset($sensorData[$stationID])) {
             $valid = false;
         }
         return $valid;
+    }
+
+    /**
+     * Construct Sensor IDs/Names from the env. config
+     *
+     * @return array
+     */
+    public static function constructSensorData(): array {
+        $sensorData = [];
+        $lookupValue = 'SENSOR_';
+        $envArray = $_ENV;
+        foreach($envArray as $key => $value) {
+            $sensorConfig = str_contains($key, $lookupValue);
+            if ($sensorConfig) {
+                $sensorData += [strtolower(substr($key,7, strlen($key)-7)) => $value];
+            }
+        }
+        return $sensorData;
     }
 }
