@@ -172,13 +172,7 @@ class PostListener {
     private function prepareSensorData(LifecycleEventArgs $args, SensorController $sensorController): array {
         $entityManager = $args->getObjectManager();
         // Construct station IDs array.
-        $stationIDs = [
-            'outside' => $sensorController::STATION_ID_OUTSIDE,
-            'living-room' => $sensorController::STATION_ID_LIVING_ROOM,
-            'garage' => $sensorController::STATION_ID_GARAGE,
-            'bedroom' => $sensorController::STATION_ID_BEDROOM,
-            'basement' => $sensorController::STATION_ID_BASEMENT
-        ];
+        $stationIDs = SensorController::constructSensorData();
         // Remove any invalid entries before calling temp & humidity methods on an empty array.
         $prepareData = $weatherData =  [];
         foreach ($stationIDs as $room => $stationID) {
