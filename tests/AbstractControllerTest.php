@@ -12,6 +12,9 @@ use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+/*
+ * Abstract Controller Test
+ */
 class AbstractControllerTest extends WebTestCase
 {
     /** @var EntityManager $manager */
@@ -23,6 +26,9 @@ class AbstractControllerTest extends WebTestCase
     /** @var KernelBrowser $client */
     public static  $client = null;
 
+    /**
+     * Prepare client & manager.
+     */
     public function setUp(): void {
         // Kernel Client can only be called once in a test.
         if (self::$client === null) {
@@ -38,8 +44,12 @@ class AbstractControllerTest extends WebTestCase
         $schemaTool->updateSchema($this->manager->getMetadataFactory()->getAllMetadata());
     }
 
-    protected function loadFixture($fixture)
-    {
+    /**
+     * Load created fixture.
+     *
+     * @param $fixture
+     */
+    protected function loadFixture($fixture) {
         $loader = new Loader();
         $fixtures = is_array($fixture) ? $fixture : [$fixture];
         foreach ($fixtures as $item) {
@@ -48,6 +58,9 @@ class AbstractControllerTest extends WebTestCase
         $this->executor->execute($loader->getFixtures());
     }
 
+    /**
+     * Drop database.
+     */
     public function tearDown(): void {
         (new SchemaTool($this->manager))->dropDatabase();
     }
