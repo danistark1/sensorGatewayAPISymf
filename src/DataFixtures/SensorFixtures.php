@@ -21,8 +21,8 @@ class SensorFixtures extends Fixture {
             $roomGateway =  new RoomGateway();
             $roomGateway->setRoom($sensorName);
             $roomGateway->setStationId($sensorID);
-            $randTemp = rand(-40,40);
-            $randHumidity = rand(10,99);
+            $randTemp = rand(-40, 40);
+            $randHumidity = rand(10, 99);
             $roomGateway->setHumidity($randHumidity);
             $roomGateway->setTemperature($randTemp);
             $dt = new \DateTime();
