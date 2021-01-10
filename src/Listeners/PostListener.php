@@ -78,7 +78,7 @@ class PostListener {
 
         // Get the last inserted report.
         $entityManager = $args->getObjectManager();
-        $reportDataDb = $entityManager->getRepository(WeatherReport::class)->findBy(array(),array('id'=>'DESC'),1,0);
+        $reportDataDb = $entityManager->getRepository(WeatherReport::class)->findBy(array(),array('lastSentDate'=>'DESC'),1,0);
         $reportData = [
             'newReport' => false,
             'counter' => 1,
@@ -90,11 +90,10 @@ class PostListener {
             $reportToday = ($lastReportDate === $currentDate);
 
             // If time > 07:00 AM && last sent report not from today and counter is 0 send
-            if ($currentTime >= ($_ENV["FIRST_REPORT_TIME"] ?? self::SECOND_REPORT_TIME) && !$reportToday) {
+            if ($currentTime >= ($_ENV["FIRST_REPORT_TIME"] ?? self::FIRST_REPORT_TIME) && !$reportToday) {
                 // First report of the day, send
                 $reportData['newReport'] = true;
                 $this->sendReport($args,$sensorController, $reportData);
-
             }
             // if time > 08:00 PM && last sent date from today and counter is < 2 send
             if ($currentTime >= ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME) &&  $lastReportLastCounter < 2 && $reportToday) {

@@ -5,6 +5,7 @@
 namespace App\Controller;
 
 use App\Entity\RoomGateway;
+use App\Entity\WeatherReport;
 use App\Repository\RoomGatewayRepository;
 use DateInterval;
 use DateTime;
@@ -107,11 +108,13 @@ class SensorController extends AbstractController {
      * Default is 1 day.
      *
      * @Route("weatherstationapi/delete/{interval}", methods={"DELETE"}, name="task_delete")
-     * @param int $interval The interval to delete records from
+     * @param string $entity The entity to delete from
+     * @param string $dataTimeField Table dateTimeField to use
+     * @param int $interval The interval to delete records
      * @return Response
      * @throws Exception
      */
-    public function delete(int $interval = 1): Response {
+    public function delete(string $entity, string $dataTimeField, int $interval = 1): Response {
         $response = new Response();
         $response->setStatusCode(self::STATUS_OK);
         $entityManager = $this->getDoctrine()->getManager();
@@ -126,8 +129,8 @@ class SensorController extends AbstractController {
         $date->setTimezone(new DateTimeZone('America/Toronto'));
         $date->format('Y-m-d H:i:s');
         $results  = $qb->select('p')
-            ->from(RoomGateway::class, 'p')
-            ->where('p.insert_date_time <= :date_from')
+            ->from($entity, 'p')
+            ->where('p.'.$dataTimeField. '<= :date_from')
             ->setParameter('date_from', $date)
             ->getQuery()
             ->execute();
@@ -165,8 +168,6 @@ class SensorController extends AbstractController {
             $response->setContent('No sensor data is configured in your environment file.');
             $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
         } else {
-
-
             // turn request data into an array
             $parameters = json_decode($request->getContent(), true);
             $parameters = $this->normalizeData($parameters);
@@ -181,7 +182,7 @@ class SensorController extends AbstractController {
             } else {
                 $validRoom = $this->validateRoom($parameters['room'], $sensorData);
                 $validStation = $this->validateStationID($parameters['station_id'], $sensorData);
-                if (!$valid || !$validRoom || !$validStation) {
+                if (!$validRoom || !$validStation) {
                     $response->setContent('Validation failed.');
                     $response->setStatusCode(self::STATUS_VALIDATION_FAILED);
 
@@ -205,7 +206,11 @@ class SensorController extends AbstractController {
 
                 // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
                 // keeping weather data for 24hrs.
-                $this->delete($_ENV["KEEP_RECORDS_FOR"] ?? $interval);
+
+                //Delete  sensor data. Table room_gateway
+                $this->delete( RoomGateway::class,'insert_date_time', $_ENV["KEEP_RECORDS_FOR"] ?? $interval);
+                // Delete sensor report data. Table weather_report
+                $this->delete( WeatherReport::class,'lastSentDate', $_ENV["KEEP_RECORDS_FOR"] ?? $interval);
                 $response->setStatusCode(self::STATUS_OK);
             }
         }
