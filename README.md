@@ -8,6 +8,19 @@
 
 Symfony REST APIs for the weatherStation project https://github.com/danistark1/weatherStation
 
+### UnitTests
+
+| Test  | Tests | Result |
+| ------------- | ------------- |------------- |
+| ![testValidSensorControllerGetByID](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/tests/SensorControllerTests.php#L27) | ![SensorController::getByID()](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L49)  | 200|
+| ![testInvalidSensorControllerGetByID](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/tests/SensorControllerTests.php#L39)  | ensorController::getByID()  | 400|
+| ![testvalidSensorControllerGetByName](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/tests/SensorControllerTests.php#L56)  | ![SensorController::getByName()](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L82)  | 200|
+| ![testInvalidSensorControllerGetByName](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L82)  | SensorController::getByName()  | 400|
+
+TODO (SensorController::Delete(), SensorController::Post()
+
+
+
 # Setup
 
 - composer install
@@ -18,7 +31,7 @@ Symfony REST APIs for the weatherStation project https://github.com/danistark1/w
 
 DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 3306)/weatherStation
 
- **Email Configuration (For weather report)**
+ **Email Configuration (For sensor readings report)**
 
 - MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 - FROM_EMAIL=
@@ -31,7 +44,23 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
 
-Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using FIRST_REPORT_TIME & SECOND_REPORT_TIME from .env file).
+Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using FIRST_REPORT_TIME & SECOND_REPORT_TIME).
+
+**Sensor names/IDs**
+
+Sensors should be configured using the format SENSOR_SENSORNAME = SENSORID
+
+ex. SENSOR_ABC = 123 (sensor name ABC, ID 123)
+Sensors names/IDs are then constructed as an array to be used in the application in
+https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L276
+
+My ex.
+
+- SENSOR_BEDROOM=6126
+- SENSOR_BASEMENT=3026
+- SENSOR_GARAGE=8166
+- SENSOR_LIVING_ROOM=15043
+- SENSOR_OUTSIDE=12154
 
 # Usage / REST API Calls
 
