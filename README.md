@@ -57,35 +57,9 @@ My ex.
 
 - GET weatherstationapi/{station_ID} by_station_id
 
-Defined IDs in
-
-[SensorController.php#L36](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L36)
-
-```php
-    // Room IDs
-    const STATION_ID_BEDROOM = 6126;
-    const STATION_ID_BASEMENT = 3026;
-    const STATION_ID_LIVING_ROOM = 15043;
-    const STATION_ID_OUTSIDE = 12154;
-    const STATION_ID_GARAGE = 8166;
-```
-
 **Get readings by Station Name**
 
 - GET weatherstationapi/{name}
-
-Defined names in
-
-[SensorController.php#L29](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L29)
-
-```php
-    // Room Names
-    const ROOM_BEDROOM = 'bedroom';
-    const ROOM_GARAGE = 'garage';
-    const ROOM_LIVING_ROOM = 'living-room';
-    const ROOM_BASEMENT = 'basement';
-    const ROOM_OUTSIDE = 'outside';
-```
 
 **POST**
 
@@ -108,6 +82,8 @@ Everytime a record is posted:
 
 - Checks if an old record needs to be deleted (records older than the defined interval are deleted) [SensorController.php#L214](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L214)
 - Checks if a weather report needs to be sent [PostListener.php#L54](https://github.com/danistark1/weatherStationApiSymfony/blob/5b274a2fa9e151e37a3793e3eb838863ccc673bd/src/Listeners/PostListener.php#L54)
+- Deletes previous sensor readings reports
+https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L209
 
 **DELETE**
 
