@@ -54,11 +54,12 @@ class PostListener {
     public function postPersist(LifecycleEventArgs $args) {
         $entity = $args->getObject();
         $sensorController = new SensorController();
+        $reportConfig = $_ENV["READING_REPORT_ENABLED"] ?? false;
+        $reportEnabled = $reportConfig && $reportConfig == 1;
         // only act on "Room" entity
-        if (!$entity instanceof RoomGateway) {
+        if (!$entity instanceof RoomGateway || !$reportEnabled) {
             return;
         }
-
         $this->prepareReportData($args, $sensorController);
     }
 
@@ -78,7 +79,12 @@ class PostListener {
 
         // Get the last inserted report.
         $entityManager = $args->getObjectManager();
-        $reportDataDb = $entityManager->getRepository(WeatherReport::class)->findBy(array(),array('lastSentDate'=>'DESC'),1,0);
+        $reportDataDb = $entityManager->getRepository(WeatherReport::class)->findBy(
+            array(),
+            array('id'=>'DESC'),
+            1,
+            0);
+        dump($reportDataDb);
         $reportData = [
             'newReport' => false,
             'counter' => 1,
@@ -96,7 +102,7 @@ class PostListener {
                 $this->sendReport($args,$sensorController, $reportData);
             }
             // if time > 08:00 PM && last sent date from today and counter is < 2 send
-            if ($currentTime >= ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME) &&  $lastReportLastCounter < 2 && $reportToday) {
+            if ($currentTime >= ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME) &&  ($lastReportLastCounter < 2) && $reportToday) {
                 // Second report of the day, send
                 $reportData['newReport'] = false;
                 $reportData['counter'] = $lastReportLastCounter + 1;
