@@ -204,9 +204,9 @@ class SensorController extends AbstractController {
                 // keeping weather data for 24hrs.
 
                 //Delete  sensor data. Table room_gateway
-                $this->delete( RoomGateway::class,'insert_date_time', $_ENV["KEEP_RECORDS_FOR"] ?? $interval);
+                $this->delete( RoomGateway::class,'insert_date_time', $_ENV["SENSORS_RECORDS_INTERVAL"] ?? $interval);
                 // Delete sensor report data. Table weather_report
-                $this->delete( WeatherReport::class,'lastSentDate', $_ENV["KEEP_RECORDS_FOR"] ?? $interval);
+                $this->delete( WeatherReport::class,'lastSentDate', $_ENV["READINGS_REPORT_INTERVAL"] ?? 2);
                 $this->response->setStatusCode(self::STATUS_OK);
             }
         }
