@@ -280,6 +280,10 @@ class SensorController extends AbstractController {
         foreach($envArray as $key => $value) {
             $sensorConfig = str_contains($key, $lookupValue);
             if ($sensorConfig) {
+                if (str_contains($key, '_')) {
+                    // Since - is not allowed in .env file, replace anyone in $key.
+                    $key = str_replace('_', '-', $key);
+                }
                 $sensorData += [strtolower(substr($key,7, strlen($key)-7)) => $value];
             }
         }
