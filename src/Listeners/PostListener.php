@@ -84,7 +84,6 @@ class PostListener {
             array('id'=>'DESC'),
             1,
             0);
-        dump($reportDataDb);
         $reportData = [
             'newReport' => false,
             'counter' => 1,
