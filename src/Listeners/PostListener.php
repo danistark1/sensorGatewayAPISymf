@@ -10,6 +10,7 @@ use App\Entity\WeatherReport;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use App\Utils\StationDateTime;
 
 /**
  * Class PostListener
@@ -73,9 +74,9 @@ class PostListener {
     private function prepareReportData($args, SensorController $sensorController) {
         // Try to send the report if the criteria is met.
         // First, get current Date & time
-        $currentDateTime = new \DateTime('now', new \DateTimeZone($_ENV["TIMEZONE"] ?? "America/Toronto"));
-        $currentDate = $currentDateTime->format('Y-m-d');
-        $currentTime = $currentDateTime->format('H:i:s');
+        $currentDateTime = StationDateTime::dateNow();
+        $currentDate = StationDateTime::dateNow('', true, 'Y-m-d');
+        $currentTime = StationDateTime::dateNow('', true, 'H:i:s');
 
         // Get the last inserted report.
         $entityManager = $args->getObjectManager();
