@@ -21,7 +21,7 @@ class SensorControllerTests extends AbstractControllerTest {
      * Test SensorController::getByID()
      *
      * @dataProvider provideSensorControllerData
-     * @param int $id
+     * @param int $stationID
      * @param string $expectedSensorName
      */
     public function testValidSensorControllerGetByID(int $stationID, string $expectedSensorName): void {
