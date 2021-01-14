@@ -16,6 +16,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use DateTimeZone;
+use App\Utils\StationDateTime;
 
 /**
  * Class SensorController
@@ -122,12 +123,7 @@ class SensorController extends AbstractController {
 
         // By default we want to delete records that are older than 1 day.
         // Weather data is only needed for 24 hrs.
-        $date = new \DateTime();
-        $period = new DateInterval('P'.$interval.'D');
-        $date->sub($period);
-
-        $date->setTimezone(new DateTimeZone('America/Toronto'));
-        $date->format('Y-m-d H:i:s');
+        $date = StationDateTime::dateNow('P'.$interval.'D');
         $results  = $qb->select('p')
             ->from($entity, 'p')
             ->where('p.'.$dataTimeField. '<= :date_from')
@@ -192,9 +188,7 @@ class SensorController extends AbstractController {
                 $roomGateway->setHumidity($parameters['humidity']);
                 $roomGateway->setTemperature($parameters['temperature']);
                 $roomGateway->setStationId($parameters['station_id']);
-                $dt = new \DateTime();
-                $dt->format('Y-m-d H:i:s');
-                $dt->setTimezone(new DateTimeZone('America/Toronto'));
+                $dt = StationDateTime::dateNow();
                 $roomGateway->setInsertDateTime($dt);
 
                 $entityManager->persist($roomGateway);
