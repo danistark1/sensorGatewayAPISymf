@@ -75,7 +75,7 @@ class PostListener {
         // Try to send the report if the criteria is met.
         // First, get current Date & time
         $currentDateTime = StationDateTime::dateNow();
-        $currentDate = StationDateTime::dateNow('',true,  'Y-m-d');
+        $currentDate = StationDateTime::dateNow('', true, 'Y-m-d');
         $currentTime = StationDateTime::dateNow('', true, 'H:i:s');
 
         // Get the last inserted report.
@@ -97,7 +97,6 @@ class PostListener {
 
             // If time > 07:00 AM && last sent report not from today and counter is 0 send
             if ($currentTime >= ($_ENV["FIRST_REPORT_TIME"] ?? self::FIRST_REPORT_TIME) && !$reportToday) {
-                dump('here');
                 // First report of the day, send
                 $reportData['newReport'] = true;
                 $this->sendReport($args,$sensorController, $reportData);
