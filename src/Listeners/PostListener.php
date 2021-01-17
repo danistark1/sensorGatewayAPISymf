@@ -8,9 +8,11 @@ use App\Controller\SensorController;
 use App\Entity\RoomGateway;
 use App\Entity\WeatherReport;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Monolog\Logger;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use App\Utils\StationDateTime;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class PostListener
@@ -54,6 +56,7 @@ class PostListener {
      */
     public function postPersist(LifecycleEventArgs $args) {
         $entity = $args->getObject();
+
         $sensorController = new SensorController();
         $reportConfig = $_ENV["READING_REPORT_ENABLED"] ?? false;
         $reportEnabled = $reportConfig && $reportConfig == 1;

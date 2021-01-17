@@ -5,19 +5,21 @@
 namespace App\Controller;
 
 use App\Entity\RoomGateway;
+use App\Entity\WeatherLogger;
 use App\Entity\WeatherReport;
 use App\Repository\RoomGatewayRepository;
 use DateInterval;
 use DateTime;
 use Exception;
 use http\Client\Request;
+use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use DateTimeZone;
 use App\Utils\StationDateTime;
-
+use Psr\Log\LoggerInterface;
 /**
  * Class SensorController
  *
@@ -35,8 +37,10 @@ class SensorController extends AbstractController {
      * @var Response $response
      */
     private $response;
+    public $logger;
 
-    public function __construct() {
+    public function __construct(? LoggerInterface $logger = null) {
+        $this->logger = $logger;
         $this->response  = new Response();
     }
 
@@ -67,7 +71,6 @@ class SensorController extends AbstractController {
                     $this->response->setContent($data);
                     $this->response->setStatusCode(self::STATUS_OK);
                 }
-
             }
         }
         return  $this->response;
@@ -190,8 +193,9 @@ class SensorController extends AbstractController {
                 $roomGateway->setStationId($parameters['station_id']);
                 $dt = StationDateTime::dateNow();
                 $roomGateway->setInsertDateTime($dt);
-
+                $this->logger->error("this is a test");
                 $entityManager->persist($roomGateway);
+
                 $entityManager->flush();
 
                 // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
