@@ -56,24 +56,22 @@ class PostListener {
      */
     public function postPersist(LifecycleEventArgs $args) {
         $entity = $args->getObject();
-        $sensorController = new SensorController();
         $reportConfig = $_ENV["READING_REPORT_ENABLED"] ?? false;
         $reportEnabled = $reportConfig && $reportConfig == 1;
         // only act on "Room" entity
         if (!$entity instanceof RoomGateway || !$reportEnabled) {
             return;
         }
-        $this->prepareReportData($args, $sensorController);
+        $this->prepareReportData($args);
     }
 
     /**
      * Check dates/report table and decide if a report needs to be sent.
      *
      * @param $args
-     * @param $sensorController
      * @throws \Exception|\Symfony\Component\Mailer\Exception\TransportExceptionInterface
      */
-    private function prepareReportData($args, SensorController $sensorController) {
+    private function prepareReportData($args) {
         // Try to send the report if the criteria is met.
         // First, get current Date & time
         $currentDateTime = StationDateTime::dateNow();
@@ -101,18 +99,21 @@ class PostListener {
             if ($currentTime >= ($_ENV["FIRST_REPORT_TIME"] ?? self::FIRST_REPORT_TIME) && !$reportToday) {
                 // First report of the day, send
                 $reportData['newReport'] = true;
-                $this->sendReport($args,$sensorController, $reportData);
+                $reportData['reportNumber'] = 1;
+                $this->sendReport($args, $reportData);
             }
             // if time > 08:00 PM && last sent date from today and counter is < 2 send
             if ($currentTime >= ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME) &&  ($lastReportLastCounter < 2) && $reportToday) {
                 // Second report of the day, send
+                $reportData['reportNumber'] = 2;
                 $reportData['newReport'] = false;
                 $reportData['counter'] = $lastReportLastCounter + 1;
-                $this->sendReport($args,$sensorController, $reportData);
+                $this->sendReport($args, $reportData);
             }
         } else {
             // First report
-            $this->sendReport($args, $sensorController, $reportData);
+            $reportData['reportNumber'] = 0;
+            $this->sendReport($args, $reportData);
         }
     }
 
@@ -129,16 +130,15 @@ class PostListener {
      * SECOND_REPORT_TIME= (Defaults to sending report everyday at "20:00:00")
      *
      * @param $args
-     * @param $sensorController
      * @param array $reportData
      * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError
      */
-    private function sendReport($args, $sensorController, array $reportData) {
+    private function sendReport($args, array $reportData) {
         // TODO check if the returned array is empty.
-        $massagedData = $this->prepareSensorData($args, $sensorController);
+        $massagedData = $this->prepareSensorData($args);
         $message = (new Email())
             ->from($_ENV["FROM_EMAIL"])
             ->to($_ENV["TO_EMAIL"])
@@ -166,17 +166,18 @@ class PostListener {
 
         $entityManager->persist($weatherReport);
         $entityManager->flush();
-        //TODO delete report record that are older than 2 days.
+        SensorController::getLoggerService()->error('Daily Report Log',
+            $reportData
+        );
     }
 
     /**
      * Massage data before sending to twig
      *
      * @param LifecycleEventArgs $args
-     * @param SensorController $sensorController
      * @return array[]
      */
-    private function prepareSensorData(LifecycleEventArgs $args, SensorController $sensorController): array {
+    private function prepareSensorData(LifecycleEventArgs $args): array {
         $entityManager = $args->getObjectManager();
         // Construct station IDs array.
         $stationIDs = SensorController::constructSensorData();
@@ -196,6 +197,10 @@ class PostListener {
                     'humidity' => $roomData[0]->getHumidity()
                     ];
             }
+        }
+        if (empty($prepareData)) {
+            SensorController::getLoggerService()->error('Daily Report No Data'
+            );
         }
         $weatherData = ['weatherData' => $prepareData];
         // Data ready to be sent to twig.

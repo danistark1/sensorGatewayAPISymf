@@ -24,44 +24,42 @@ class MonologDBHandler extends AbstractProcessingHandler {
      * @param array $record
      */
     protected function write(array $record): void {
-        //if( 'doctrine' == $record['channel'] ) {
-        // TODO Log level should be configurable
-            if ((int)$record['level'] === Logger::INFO || (int)$record['level'] === Logger::DEBUG) {
-                return;
-            }
-//            if( (int)$record['level'] >= Logger::WARNING ) {
-//                error_log($record['message']);
+        // Check if debugging is enabled.
+        if (isset($_ENV['DEBUG']) && $_ENV['DEBUG'] == 1) {
+            //if( 'doctrine' == $record['channel'] ) {
+            // TODO Log level should be configurable
+//            if ((int)$record['level'] === Logger::INFO || (int)$record['level'] === Logger::DEBUG) {
+//                return;
 //            }
 
-//            return;
-//        }
-        try {
-            $logEntry = new WeatherLogger();
-            $logEntry->setMessage($record['message']);
-            $logEntry->setLevel($record['level']);
-            $logEntry->setLevelName($record['level_name']);
-            $logDateTime =  StationDateTime::dateNow();
-            $logEntry->setInsertDataTime($logDateTime);
+            try {
+                $logEntry = new WeatherLogger();
+                $logEntry->setMessage($record['message']);
+                $logEntry->setLevel($record['level']);
+                $logEntry->setLevelName($record['level_name']);
+                $logDateTime = StationDateTime::dateNow();
+                $logEntry->setInsertDataTime($logDateTime);
 
-            if (is_array($record['extra'])) {
-                $logEntry->setExtra($record['extra']);
-            } else {
-                $logEntry->setExtra([]);
+                if (is_array($record['extra'])) {
+                    $logEntry->setExtra($record['extra']);
+                } else {
+                    $logEntry->setExtra([]);
+                }
+
+                if (is_array($record['context'])) {
+                    $logEntry->setContext($record['context']);
+                } else {
+                    $logEntry->setContext([]);
+                }
+
+
+                $this->em->persist($logEntry);
+                $this->em->flush();
+            } catch (\Exception $e) {
+
+                error_log($record['message']);
+                error_log($e->getMessage());
             }
-
-            if (is_array($record['context'])) {
-                $logEntry->setContext($record['context']);
-            } else {
-                $logEntry->setContext([]);
-            }
-
-
-            $this->em->persist($logEntry);
-            $this->em->flush();
-        } catch (\Exception $e) {
-
-            error_log($record['message']);
-            error_log($e->getMessage());
         }
 
 

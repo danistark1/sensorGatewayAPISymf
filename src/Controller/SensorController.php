@@ -7,11 +7,13 @@ namespace App\Controller;
 use App\Entity\RoomGateway;
 use App\Entity\WeatherLogger;
 use App\Entity\WeatherReport;
+use App\Logger\MonologDBHandler;
 use App\Repository\RoomGatewayRepository;
 use DateInterval;
 use DateTime;
 use Exception;
 use http\Client\Request;
+use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
@@ -32,13 +34,18 @@ class SensorController extends AbstractController {
     const STATUS_VALIDATION_FAILED = 400;
     const STATUS_NOT_FOUND = 404;
 
+    const VALIDATION_FAILED = "Validation failed.";
+    const BAD_CONFIG = "No sensor data is configured in your environment file.";
+    const NO_RECORD = "Record not found.";
+
     /**
      * @var Response $response
      */
     private $response;
 
     /**
-     * @var object|null
+     *
+     * @var Logger object|null
      */
     private $loggerService;
 
@@ -66,8 +73,9 @@ class SensorController extends AbstractController {
         } else {
             $valid = $this->validateStationID($id);
             if (!$valid) {
-                $this->response->setContent('Invalid Room ID.');
+                $this->response->setContent('Invalid Station ID.');
                 $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+                $this->loggerService->error('Invalid Station ID.', ['id' => $id]);
 
             } else {
                 $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['station_id' => $id]);
@@ -99,13 +107,15 @@ class SensorController extends AbstractController {
             $name = strtolower($name);
             $valid = $this->validateRoom($name);
             if (!$valid) {
-                $this->response->setContent('Invalid Room Name.');
+                $this->response->setContent('Invalid Station Name.');
                 $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+                $this->loggerService->error('Invalid Station Name.', ['name' => $name]);
             } else {
                 $room = $this->getDoctrine()->getRepository(RoomGateway::class)->findBy(['room' => $name]);
                 if (!empty($room)) {
                     $data = $this->json($room)->getContent();
                     $this->response->setContent($data);
+                    $this->loggerService->error('Station not found.'.self::STATUS_VALIDATION_FAILED, ['name' => $name]);
                 } else {
                     $this->response->setContent('No weather data found.');
                     $this->response->setStatusCode(self::STATUS_NOT_FOUND);
@@ -149,6 +159,7 @@ class SensorController extends AbstractController {
             $this->response->setStatusCode(self::STATUS_NO_CONTENT);
         } else {
             $this->response->setStatusCode(self::STATUS_NOT_FOUND);
+            //$this->loggerService->error(self::NO_RECORD);
         }
         $data = $this->json($results)->getContent();
         $this->response->setContent($data);
@@ -167,8 +178,9 @@ class SensorController extends AbstractController {
     public function post(\Symfony\Component\HttpFoundation\Request $request, int $interval = 1): Response {
         $validSensorConfig = empty(self::constructSensorData()) ? false : true;
         if (!$validSensorConfig) {
-            $this->response->setContent('No sensor data is configured in your environment file.');
+            $this->response->setContent(self::BAD_CONFIG);
             $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+            $this->loggerService->critical(self::BAD_CONFIG);
         } else {
             // turn request data into an array
             $parameters = json_decode($request->getContent(), true);
@@ -180,14 +192,15 @@ class SensorController extends AbstractController {
             }
             if (!$valid) {
                 $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-                $this->response->setContent('Post validation failed.');
+                $this->response->setContent(self::VALIDATION_FAILED);
+                $this->loggerService->error(self::VALIDATION_FAILED, $parameters);
             } else {
                 $validRoom = $this->validateRoom($parameters['room']);
                 $validStation = $this->validateStationID($parameters['station_id']);
                 if (!$validRoom || !$validStation) {
-                    $this->response->setContent('Validation failed.');
+                    $this->response->setContent('Station Name '.self::VALIDATION_FAILED);
                     $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-
+                    $this->loggerService->error('Station Name '.self::VALIDATION_FAILED, $parameters);
                     return $this->response;
                 }
 
@@ -201,13 +214,10 @@ class SensorController extends AbstractController {
                 $dt = StationDateTime::dateNow();
                 $roomGateway->setInsertDateTime($dt);
                 $entityManager->persist($roomGateway);
-                $this->loggerService->addRecord(400,"this is an error..", ['test'=> 1123]);
-
                 $entityManager->flush();
 
                 // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
                 // keeping weather data for 24hrs.
-
                 //Delete  sensor data. Table room_gateway
                 $this->delete( RoomGateway::class,'insert_date_time', $_ENV["SENSORS_RECORDS_INTERVAL"] ?? $interval);
                 // Delete sensor report data. Table weather_report
@@ -271,6 +281,16 @@ class SensorController extends AbstractController {
             $valid = false;
         }
         return $valid;
+    }
+
+    /**
+     * Return the configured logging service.
+     *
+     * @return Logger|object|null
+     */
+    public static function getLoggerService(): Logger {
+        $staticNonsense = new static();
+        return $staticNonsense->loggerService;
     }
 
     /**
