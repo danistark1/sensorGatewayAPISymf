@@ -12,14 +12,13 @@ use DateInterval;
 use DateTime;
 use Exception;
 use http\Client\Request;
-use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use DateTimeZone;
 use App\Utils\StationDateTime;
-use Psr\Log\LoggerInterface;
+
 /**
  * Class SensorController
  *
@@ -37,11 +36,19 @@ class SensorController extends AbstractController {
      * @var Response $response
      */
     private $response;
-    public $logger;
 
-    public function __construct(? LoggerInterface $logger = null) {
-        $this->logger = $logger;
+    /**
+     * @var object|null
+     */
+    private $loggerService;
+
+
+    public function __construct() {
         $this->response  = new Response();
+        global $kernel;
+        $container = $kernel->getContainer();
+        $service = $container->get('monolog.logger.app-channel');
+        $this->loggerService = $service;
     }
 
     /**
@@ -193,8 +200,8 @@ class SensorController extends AbstractController {
                 $roomGateway->setStationId($parameters['station_id']);
                 $dt = StationDateTime::dateNow();
                 $roomGateway->setInsertDateTime($dt);
-                $this->logger->error("this is a test");
                 $entityManager->persist($roomGateway);
+                $this->loggerService->addRecord(400,"this is an error..", ['test'=> 1123]);
 
                 $entityManager->flush();
 

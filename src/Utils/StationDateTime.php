@@ -21,7 +21,7 @@ class StationDateTime {
      * Time H:i:s
      *
      * @param string $duration
-     * @param bool $formatted If True, Return Data Or Time formatted string, otherwise Return DateTime formated object
+     * @param bool $formatted If True, Return Date Or Time formatted string, otherwise Return DateTime formated DateTime object
      * @param string $format
      * @param string $timeZone
      * @return string

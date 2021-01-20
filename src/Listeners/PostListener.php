@@ -56,7 +56,6 @@ class PostListener {
      */
     public function postPersist(LifecycleEventArgs $args) {
         $entity = $args->getObject();
-
         $sensorController = new SensorController();
         $reportConfig = $_ENV["READING_REPORT_ENABLED"] ?? false;
         $reportEnabled = $reportConfig && $reportConfig == 1;
