@@ -1,0 +1,33 @@
+monolog:
+    use_microseconds: false
+    # Here we define new channels
+    channels: ["app-channel"]
+    handlers:
+        db_handler:
+            # The level of the handler is configured at the same service level: https://github.com/symfony/monolog-bundle/issues/116
+            type: service
+            id: monolog.db_handler
+            channels: app-channel
+#
+#        main:
+#            type: fingers_crossed
+#            action_level: error
+#            handler: grouped_handler
+#
+#        # Handler type "group" to group other handlers
+#        grouped_handler:
+#            type: group
+#            members: ["nested_handler", "db_error_handler"]
+#
+#        nested_handler:
+#            type:  stream
+#            path:  "php://stderr"
+#            # Minimum log level
+#            level: info
+#            # We use a Formatter based on Line Formatter to transfer fields if necessary
+#            # formatter: AppBundle\Formatter\LogFormatter
+#
+#        db_error_handler:
+#            # The level of the handler is configured at the service level : https://github.com/symfony/monolog-bundle/issues/116
+#            type: service
+#            id: monolog.error_db_handler
