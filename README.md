@@ -28,11 +28,16 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 - FIRST_REPORT_TIME="Default 07:00:00" (Sensor readings report first send time)
 - SECOND_REPORT_TIME="Default 20:00:00"(Sensor readings report second send time)
 - SENSORS_RECORDS_INTERVAL=1 (Everytime a new record is added to the db, readings older than the defined interval will be deleted)
-- READINGS_REPORT_INTERVAL=1 (Everytime a new record is added to the db, daily report readings older than the defined interval will be deleted)
+- READINGS_REPORT_INTERVAL=2 (Everytime a new record is added to the db, daily report readings older than the defined interval will be deleted)
+- READING_REPORT_ENABLED=1 To enable/disable reading report.
 
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
 
 Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using FIRST_REPORT_TIME & SECOND_REPORT_TIME).
+
+**Debugging**
+
+- DEBUG=1 To enable Monlog debugging.
 
 **Sensor names/IDs**
 
