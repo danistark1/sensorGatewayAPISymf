@@ -13,6 +13,8 @@ use DateInterval;
 use DateTime;
 use Exception;
 
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -51,6 +53,11 @@ class SensorController extends AbstractController {
     private $response;
 
     /**
+     * @var Request
+     */
+    private $request;
+
+    /**
      *
      * @var Logger object|null
      */
@@ -73,6 +80,7 @@ class SensorController extends AbstractController {
      */
     public function __construct(Kernel $kernel, RoomGatewayRepository $roomGatewayRepository = null) {
         $this->response  = new Response();
+        $this->request  = new Request();
         self::$kernel = $kernel;
         $container = $kernel->getContainer();
         $service = $container->get('monolog.logger.app-channel');
@@ -81,17 +89,107 @@ class SensorController extends AbstractController {
     }
 
     /**
+     * @param Request $request
+     * @param $requiredField
+     * @param ValidatorInterface $validator
+     * @return bool|Response
+     */
+    private function validateRequest(Request $request, $requiredField, ValidatorInterface $validator = null) {
+        //        $emailConstraint = new Assert\Email();
+//        $emailConstraint->message = 'Invalid email address';
+//        $errors = $validator->validate(
+//            'abc.com',
+//            $emailConstraint
+//        );
+//
+//        if (0 === count($errors)) {
+//
+//            // ... this IS a valid email address, do something
+//        } else {
+//            // this is *not* a valid email address
+//            $errorMessage = $errors[0]->getMessage();
+//            dump($errorMessage);
+//
+//            // ... do something with the error
+//        }
+
+
+        $valid = is_int($requiredField) ? $this->validateStationID($requiredField) : $this->validateRoom($requiredField);
+        return $valid;
+    }
+
+    /**
+     * Get ordered weatherData.
+     * Params: order =>asc/desc,
+     *         orderField => humidity/temperature/station_id,room
+     * By default, gets latest record ordered by insert_date_time.
+     * @param Request $request
+     * @return Response
+     * @Route("/weatherstation/api/ordered", methods={"GET"}, name="get_by_ordered")
+     */
+    public function getByOrdered(Request $request): Response {
+        $order = $request->get('order');
+        $orderField = $request->get('orderField');
+        if ($order !== 'desc' && $order !== 'asc') {
+            $this->response->setContent(self::VALIDATION_FAILED);
+            $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+        } else {
+            $response = $this->roomGatewayRepository->findOrdered($orderField, $order);
+            $this->validateResponse($response);
+        }
+        return $this->response;
+    }
+    /**
      * Get weatherData by stationID
      *
      * @param Request $request
+     * @param int $id
      * @return Response
-     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, name="get_by_id2")
+     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
      */
-    public function getByID2(Request $request, $id): Response {
-        $stationID= $request->query->get('station_id');
-        //dump($request->get);
-       dump($stationID);
-       dump($id);
+    public function getByID(Request $request, int $id): Response {
+        $operation = $request->get('operation');
+        $field = $request->get('field');
+        $value = $request->get('value');
+        $latest = $request->get('latest');
+        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
+        if (!$validSensorConfig) {
+            $this->updateResponse(
+                self::VALIDATION_BAD_CONFIG,
+                self::STATUS_VALIDATION_FAILED,
+                [
+                    'loggerMsg' => self::VALIDATION_BAD_CONFIG,
+                    'loggerContext' => ['method' => __FUNCTION__],
+                    'loggerLevel' => 'critical'
+                ]
+            );
+        } else {
+            $valid = $this->validateRequest($request, $id);
+            if ($valid) {
+                //$response = $this->roomGatewayRepository->findLatest();
+                $response = $this->roomGatewayRepository->findByQueryOperation(
+                    [
+                        'station_id' => $id,
+                        'operation' => $operation,
+                        'field' => $field,
+                        'value' => $value
+                    ]
+                );
+                $this->validateResponse($response, $id);
+            }
+
+        }
+        return $this->response;
+    }
+
+    /**
+     * Get weatherData by stationID
+     *
+     * @param int $id The room id.
+     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
+     * @return Response
+     */
+//    public function getByID(int $id): Response {
 //        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
 //        if (!$validSensorConfig) {
 //            $this->updateResponse(
@@ -111,43 +209,13 @@ class SensorController extends AbstractController {
 //            }
 //
 //        }
-        return $this->response;
-    }
-
-    /**
-     * Get weatherData by stationID
-     *
-     * @param int $id The room id.
-     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
-     * @return Response
-     */
-    public function getByID(int $id): Response {
-        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
-        if (!$validSensorConfig) {
-            $this->updateResponse(
-                self::VALIDATION_BAD_CONFIG,
-                self::STATUS_VALIDATION_FAILED,
-                [
-                    'loggerMsg' => self::VALIDATION_BAD_CONFIG,
-                    'loggerContext' => ['method' => __FUNCTION__],
-                    'loggerLevel' => 'critical'
-                ]
-            );
-        } else {
-            $valid = $this->validateStationID($id);
-            if ($valid) {
-                $response = $this->roomGatewayRepository->findByQuery(['station_id' => $id]);
-                $this->validateResponse($response, $id);
-            }
-
-        }
-        return $this->response;
-    }
+//        return $this->response;
+//    }
 
     /**
      * Validate API response.
      */
-    private function validateResponse(array $response, $sensorIdentifier) {
+    private function validateResponse(array $response, $sensorIdentifier = '') {
         $responseJson = $this->json($response)->getContent();
         if (empty($responseJson)){
             $this->response->setStatusCode(self::STATUS_NO_CONTENT);

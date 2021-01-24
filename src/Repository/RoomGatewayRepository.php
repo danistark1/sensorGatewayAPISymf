@@ -17,12 +17,11 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method RoomGateway[]    findAll()
  * @method RoomGateway[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class RoomGatewayRepository extends ServiceEntityRepository
-{
-    public function __construct(ManagerRegistry $registry)
-    {
+class RoomGatewayRepository extends ServiceEntityRepository {
+    public function __construct(ManagerRegistry $registry) {
         parent::__construct($registry, RoomGateway::class);
     }
+
 
     /**
      * Find a record.
@@ -33,6 +32,41 @@ class RoomGatewayRepository extends ServiceEntityRepository
     public function findByQuery(array $params): array {
         $sensorData = parent::findBy($params);
         return $sensorData;
+    }
+
+    /**
+     * Get a single record order by field name.
+     *
+     * @param string $field Field to order by.
+     * @param string $order The order.
+     * @return array
+     */
+    public function findOrdered($field = 'insert_date_time', $order = 'DESC'): array {
+        $sensorData = parent::findBy([], [$field => $order], 1 );
+        return $sensorData;
+    }
+
+    /**
+     * Find a record.
+     *
+     * @param array $params
+     * @return array
+     */
+    public function findByQueryOperation(array $params): array {
+        $em = $this->getEntityManager();
+        $qb = $em->createQueryBuilder();
+        $field = $params['field'];
+        $value = $params['value'];
+        $operation = $params['operation'];
+
+        $results  = $qb->select('p')
+            ->from(RoomGateway::class, 'p')
+            ->where('p.'.$field. $operation. ' :'.$field)
+            ->setParameter($field, $value)
+            ->getQuery()
+            ->execute();
+
+        return $results;
     }
 
     /**
