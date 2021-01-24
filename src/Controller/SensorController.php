@@ -85,12 +85,13 @@ class SensorController extends AbstractController {
      *
      * @param Request $request
      * @return Response
-     * @Route("/weatherstation/api", methods={"GET"}, name="get_by_id2")
+     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, name="get_by_id2")
      */
-    public function getByID2(Request $request): Response {
-        //$stationID= $request->query->get();
+    public function getByID2(Request $request, $id): Response {
+        $stationID= $request->query->get('station_id');
         //dump($request->get);
-       //dump($stationID);
+       dump($stationID);
+       dump($id);
 //        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
 //        if (!$validSensorConfig) {
 //            $this->updateResponse(
