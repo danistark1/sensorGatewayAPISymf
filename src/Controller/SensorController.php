@@ -80,6 +80,7 @@ class SensorController extends AbstractController {
      */
     public function __construct(Kernel $kernel, RoomGatewayRepository $roomGatewayRepository = null) {
         $this->response  = new Response();
+        $this->response->headers->set('Content-Type', 'application/json');
         $this->request  = new Request();
         self::$kernel = $kernel;
         $container = $kernel->getContainer();
@@ -89,37 +90,7 @@ class SensorController extends AbstractController {
     }
 
     /**
-     * @param Request $request
-     * @param $requiredField
-     * @param ValidatorInterface $validator
-     * @return bool|Response
-     */
-    private function validateRequest(Request $request, $requiredField, ValidatorInterface $validator = null) {
-        //        $emailConstraint = new Assert\Email();
-//        $emailConstraint->message = 'Invalid email address';
-//        $errors = $validator->validate(
-//            'abc.com',
-//            $emailConstraint
-//        );
-//
-//        if (0 === count($errors)) {
-//
-//            // ... this IS a valid email address, do something
-//        } else {
-//            // this is *not* a valid email address
-//            $errorMessage = $errors[0]->getMessage();
-//            dump($errorMessage);
-//
-//            // ... do something with the error
-//        }
-
-
-        $valid = is_int($requiredField) ? $this->validateStationID($requiredField) : $this->validateRoom($requiredField);
-        return $valid;
-    }
-
-    /**
-     * Get ordered weatherData.
+     * Get latest/oldest weatherData.
      * Params: order =>asc/desc,
      *         orderField => humidity/temperature/station_id,room
      * By default, gets latest record ordered by insert_date_time.
@@ -128,30 +99,42 @@ class SensorController extends AbstractController {
      * @Route("/weatherstation/api/ordered", methods={"GET"}, name="get_by_ordered")
      */
     public function getByOrdered(Request $request): Response {
-        $order = $request->get('order');
+        $order = $request->get('order') ?? 'desc';
         $orderField = $request->get('orderField');
-        if ($order !== 'desc' && $order !== 'asc') {
+        $isOrderValid  = ($orderField === 'temperature') ||  ($orderField === 'humidity');
+        if (!$isOrderValid) {
             $this->response->setContent(self::VALIDATION_FAILED);
             $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+            $this->loggerService->error(self::VALIDATION_FAILED,
+                [
+                    'method' => __FUNCTION__,
+                    'order' => $order,
+                    'orderField' => $orderField
+                ]
+            );
         } else {
             $response = $this->roomGatewayRepository->findOrdered($orderField, $order);
             $this->validateResponse($response);
         }
         return $this->response;
     }
+
     /**
-     * Get weatherData by stationID
+     * Get weatherData by ID ordered by field
+     * Ex. weatherstation/api/id/{6126}?field={temperature}&value={1}&operation={>}
+     * Gets all records for station 6126 that have temp >=1
+     *
+     * Operations >, >=, <, <=, <>
      *
      * @param Request $request
      * @param int $id
      * @return Response
      * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
      */
-    public function getByID(Request $request, int $id): Response {
+    public function getByIDOrdered(Request $request, int $id): Response {
         $operation = $request->get('operation');
         $field = $request->get('field');
         $value = $request->get('value');
-        $latest = $request->get('latest');
         $validSensorConfig = empty(self::constructSensorData()) ? false : true;
         if (!$validSensorConfig) {
             $this->updateResponse(
@@ -164,9 +147,8 @@ class SensorController extends AbstractController {
                 ]
             );
         } else {
-            $valid = $this->validateRequest($request, $id);
+            $valid = $this->validateStationID($id);
             if ($valid) {
-                //$response = $this->roomGatewayRepository->findLatest();
                 $response = $this->roomGatewayRepository->findByQueryOperation(
                     [
                         'station_id' => $id,
@@ -183,34 +165,34 @@ class SensorController extends AbstractController {
     }
 
     /**
-     * Get weatherData by stationID
+     * Get all weatherData by stationID
      *
      * @param int $id The room id.
      * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
      * @return Response
      */
-//    public function getByID(int $id): Response {
-//        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
-//        if (!$validSensorConfig) {
-//            $this->updateResponse(
-//                self::VALIDATION_BAD_CONFIG,
-//                self::STATUS_VALIDATION_FAILED,
-//                [
-//                    'loggerMsg' => self::VALIDATION_BAD_CONFIG,
-//                    'loggerContext' => ['method' => __FUNCTION__],
-//                    'loggerLevel' => 'critical'
-//                ]
-//            );
-//        } else {
-//            $valid = $this->validateStationID($id);
-//            if ($valid) {
-//                $response = $this->roomGatewayRepository->findByQuery(['station_id' => $id]);
-//                $this->validateResponse($response, $id);
-//            }
-//
-//        }
-//        return $this->response;
-//    }
+    public function getByID(int $id): Response {
+        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
+        if (!$validSensorConfig) {
+            $this->updateResponse(
+                self::VALIDATION_BAD_CONFIG,
+                self::STATUS_VALIDATION_FAILED,
+                [
+                    'loggerMsg' => self::VALIDATION_BAD_CONFIG,
+                    'loggerContext' => ['method' => __FUNCTION__],
+                    'loggerLevel' => 'critical'
+                ]
+            );
+        } else {
+            $valid = $this->validateStationID($id);
+            if ($valid) {
+                $response = $this->roomGatewayRepository->findByQuery(['station_id' => $id]);
+                $this->validateResponse($response, $id);
+            }
+
+        }
+        return $this->response;
+    }
 
     /**
      * Validate API response.
@@ -237,7 +219,7 @@ class SensorController extends AbstractController {
         $validSensorConfig = empty(self::constructSensorData()) ? false : true;
         if (!$validSensorConfig) {
             $this->updateResponse(
-                self::VALIDATION_CONFIG,
+                self::VALIDATION_BAD_CONFIG,
                 self::STATUS_VALIDATION_FAILED,
                 [
                     'loggerMsg' => self::VALIDATION_BAD_CONFIG,
@@ -262,13 +244,11 @@ class SensorController extends AbstractController {
      * @param string $message
      * @param int $statusCode
      * @param $loggerParams
-     * @return Response
      */
-    private function updateResponse(string $message, int $statusCode, $loggerParams): Response {
+    private function updateResponse(string $message, int $statusCode, $loggerParams) {
         $this->response->setContent($message);
         $this->response->setStatusCode($statusCode);
         $this->loggerService->{$loggerParams['loggerLevel']}($loggerParams['loggerMsg'], $loggerParams['loggerContext']);
-        return $this->response;
     }
 
     /**
@@ -276,19 +256,12 @@ class SensorController extends AbstractController {
      * Default is 1 day.
      *
      * @Route("weatherstation/api/delete/{parsms}", methods={"DELETE"}, name="task_delete")
-     * @param string $entity The entity to delete from
-     * @param string $dataTimeField Table dateTimeField to use
-     * @param int $interval The interval to delete records
+     * @param array $params
      * @return Response
-     * @throws Exception
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
      */
     public function delete(array $params): Response {
-//        $params = [
-//            'tableName' => The Entity class,
-//            'dateTimeField' => datetime field to use,
-//            'interval' => ,
-//
-//        ];
 
         //TODO Validate delete parsms.
         $this->roomGatewayRepository->delete($params);
@@ -300,12 +273,12 @@ class SensorController extends AbstractController {
      * Post weatherData.
      *
      * @Route("/weatherstation/api",  methods={"POST"}, name="post_by_name")
-     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param Request $request
      * @param int $interval Interval for sending weather report emails.
      * @return Response
      * @throws Exception
      */
-    public function post(\Symfony\Component\HttpFoundation\Request $request, int $interval = 1): Response {
+    public function post(Request $request, int $interval = 1): Response {
         $validSensorConfig = empty(self::constructSensorData()) ? false : true;
         if (!$validSensorConfig) {
             $this->updateResponse(

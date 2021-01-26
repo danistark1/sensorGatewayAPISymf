@@ -11,8 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * @ORM\Entity(repositoryClass=RoomGatewayRepository::class)
  */
-class RoomGateway
-{
+class RoomGateway {
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
