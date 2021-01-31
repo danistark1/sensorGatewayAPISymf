@@ -57,7 +57,7 @@ class PostListener {
      * @var Environment
      */
     public $templating;
-    
+
     /**
      * @var MailerInterface
      */
@@ -106,7 +106,8 @@ class PostListener {
             $lastSentNotificationReport = $this->getLastSentReport(self::REPORT_NOTIFICATIONS);
             // Check if notification report needs to be sent.
             $shouldSendNotificationReport = $this->shouldSendReport($lastSentNotificationReport,'notification');
-            if ($shouldSendNotificationReport) {
+            $notificationsReportEnabled = $_ENV["NOTIFICATIONS_REPORT_ENABLED"];
+            if ($shouldSendNotificationReport && $notificationsReportEnabled) {
                 try {
                     $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
                     $this->updateWeatherReport(self::REPORT_NOTIFICATIONS);
