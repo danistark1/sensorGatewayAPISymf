@@ -21,8 +21,8 @@
     <tbody>
     {% for room, sensorData in notificationsData%}
 <tr>
-
-    <td>{{ room }}</td>
+    {% if sensorData.temperature is defined %}
+        <td>{{ room }}</td>
     {% if 'lower' in sensorData['temperature']|keys %}
         <td>{{ sensorData['temperature']['lower']|e }}</td>
         <td>{{ sensorData['temperature']['value']|e }}</td>
@@ -30,16 +30,20 @@
         <td>{{ sensorData['temperature']['upper']|e }}</td>
         <td>{{ sensorData['temperature']['value']|e }}</td>
     {% endif %}
+    {% endif %}
 </tr>
         <tr>
 
-            <td>{{ room }}</td>
+
+            {% if sensorData.humidity is defined %}
+                <td>{{ room }}</td>
             {% if 'lower' in sensorData['humidity']|keys %}
                 <td>{{ sensorData['humidity']['lower']|e }}</td>
                 <td>{{ sensorData['humidity']['value']|e }}</td>
             {% else %}
                 <td>{{ sensorData['humidity']['upper']|e }}</td>
                 <td>{{ sensorData['humidity']['value']|e }}</td>
+            {% endif %}
             {% endif %}
         </tr>
     {% endfor %}
