@@ -109,8 +109,11 @@ class PostListener {
             $notificationsReportEnabled = $_ENV["NOTIFICATIONS_REPORT_ENABLED"];
             if ($shouldSendNotificationReport && $notificationsReportEnabled) {
                 try {
-                    $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
-                    $this->updateWeatherReport(self::REPORT_NOTIFICATIONS);
+                    $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
+                    if ($success) {
+                        $this->updateWeatherReport(self::REPORT_NOTIFICATIONS);
+                    }
+
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
                 }
@@ -124,8 +127,10 @@ class PostListener {
             $shouldSendReport = $this->shouldSendReport($lastSentDailyReport);
             if ($shouldSendReport) {
                 try {
-                    $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
-                    $this->updateWeatherReport(self::REPORT_DAILY);
+                    $success = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
+                    if ($success) {
+                        $this->updateWeatherReport(self::REPORT_DAILY);
+                    }
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
                 }
@@ -267,6 +272,7 @@ class PostListener {
      * @throws \Twig\Error\SyntaxError
      */
     private function sendReport(array $sensorData, string $twigEmail, $emailTitle = 'Report') {
+        $success = true;
         $emailsArray = [
             'from' => $_ENV["FROM_EMAIL"],
             'to' => $_ENV["TO_EMAIL"]
@@ -274,6 +280,7 @@ class PostListener {
         $valid = ArraysUtils::validateEmails(($emailsArray));
         if (!$valid) {
             $this->logger->log('Invalid Emails.', ['sender' => __FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
+            return $success = false;
         }
         if ($valid && !empty($sensorData))  {
             $message = (new Email())
@@ -293,6 +300,7 @@ class PostListener {
                 $sensorData, Logger::DEBUG
             );
         }
+        return $success;
     }
 
     /**
@@ -306,12 +314,10 @@ class PostListener {
         // Update Email Report table after email is sent.
         $weatherReport = new WeatherReportEntity();
         $weatherReport->setEmailBody($reportType);
-        $weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1);
-
+        $weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? 2 : 1);
 
         $weatherReport->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
         $weatherReport->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
-
         try {
             $this->entityManager->persist($weatherReport);
         } catch (ORMException $e) {
