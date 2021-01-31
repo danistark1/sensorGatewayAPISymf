@@ -427,4 +427,20 @@ class SensorController extends AbstractController {
         }
         return $sensorData;
     }
+
+    /**
+     * Construct Upper/Lower Humidity & Temperature configured values from the env. config
+     *
+     * @return array
+     */
+    public static function constructNotificationsData(): array {
+        $notificationsData = [];
+        $envArray = $_ENV;
+        foreach($envArray as $key => $value) {
+            if (preg_match('(UPPER_TEMPERATURE|LOWER_TEMPERATURE|UPPER_HUMIDITY|LOWER_HUMIDITY)', $key) === 1) {
+                $notificationsData += [strtolower(substr($key,0, strlen($key))) => $value];
+            }
+        }
+        return $notificationsData;
+    }
 }

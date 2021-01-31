@@ -99,17 +99,18 @@ class PostListener {
             'counter' => 1,
             'currentDateTime' => $currentDateTime
         ];
+        // Check if any sensor notification needs to be sent.
+        $this->prepareNotifications($args);
         if (!empty($reportDataDb)) {
             $lastReportDate = $reportDataDb[0]->getLastSentDate()->format('Y-m-d');
             $lastReportLastCounter = $reportDataDb[0]->getLastSentCounter();
             $reportToday = ($lastReportDate === $currentDate);
-
             // If time > 07:00 AM && last sent report not from today and counter is 0 send
             if ($currentTime >= ($_ENV["FIRST_REPORT_TIME"] ?? self::FIRST_REPORT_TIME) && !$reportToday) {
                 // First report of the day, send
                 $reportData['newReport'] = true;
                 $reportData['reportNumber'] = 1;
-                $this->sendReport($args, $reportData);
+                $this->sendReport($args, $reportData, $this->prepareSensorData($args),'/sensor/weatherStationDailyReport.html.twig', $_ENV['EMAIL_TITLE_DAILY_REPORT']);
             }
             // if time > 08:00 PM && last sent date from today and counter is < 2 send
             if ($currentTime >= ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME) &&  ($lastReportLastCounter < 2) && $reportToday) {
@@ -117,13 +118,38 @@ class PostListener {
                 $reportData['reportNumber'] = 2;
                 $reportData['newReport'] = false;
                 $reportData['counter'] = $lastReportLastCounter + 1;
-                $this->sendReport($args, $reportData);
+                $this->sendReport($args, $reportData, $this->prepareSensorData($args),'/sensor/weatherStationDailyReport.html.twig', $_ENV['EMAIL_TITLE_DAILY_REPORT']);
             }
         } else {
             // First report
             $reportData['reportNumber'] = 0;
-            $this->sendReport($args, $reportData);
+            $this->sendReport($args, $reportData, $this->prepareSensorData($args),'/sensor/weatherStationDailyReport.html.twig', $_ENV['EMAIL_TITLE_DAILY_REPORT']);
         }
+    }
+
+    private function prepareNotifications($args) {
+        $massagedData = $this->prepareSensorData($args)['weatherData'];
+        //dump($massagedData['weatherData']);
+        $notificationsSetThresholds = SensorController::constructNotificationsData();
+        // Loop over configured Thresholds, send email.
+        $notificationsEmailData = [];
+        foreach($massagedData as $key => $value) {
+            if ($massagedData[$key]['temperature'] >= $notificationsSetThresholds['sensor_'.$key.'_upper_temperature']) {
+                $notificationsEmailData[$key]['temperature']['upper'] = 'Upper Temp Threshold Reached '.$massagedData[$key]['temperature'];
+            } elseif($massagedData[$key]['temperature'] <= $notificationsSetThresholds['sensor_'.$key.'_lower_temperature']) {
+                $notificationsEmailData[$key]['temperature']['lower'] = 'Lower Temp Threshold Reached '.$massagedData[$key]['temperature'];
+            }
+            if ($massagedData[$key]['humidity'] >= $notificationsSetThresholds['sensor_'.$key.'_upper_humidity']) {
+                $notificationsEmailData[$key]['humidity']['upper'] = 'Upper Humidity Threshold Reached '.$massagedData[$key]['humidity'];
+            }elseif($massagedData[$key]['humidity'] <= $notificationsSetThresholds['sensor_'.$key.'_lower_humidity']) {
+                $notificationsEmailData[$key]['humidity']['lower'] = 'Lower Humidity Threshold Reached '.$massagedData[$key]['humidity'];
+            }
+
+            $this->sendReport($args, $reportData, $notificationsEmailData, '/sensor/weatherStationReportNotifications.html.twig',$_ENV['EMAIL_TITLE_NOTIFICATIONS']);
+
+        }
+
+
     }
 
     /**
@@ -140,45 +166,51 @@ class PostListener {
      *
      * @param $args
      * @param array $reportData
+     * @param array $sensorData
+     * @param string $twigEmail
+     * @param string $emailTitle
      * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError
      */
-    private function sendReport($args, array $reportData) {
+    private function sendReport($args, array $reportData, array $sensorData, string $twigEmail, $emailTitle = 'Report') {
         // TODO check if the returned array is empty.
-        $massagedData = $this->prepareSensorData($args);
+        //$massagedData = $this->prepareSensorData($args);
         $message = (new Email())
             ->from($_ENV["FROM_EMAIL"])
             ->to($_ENV["TO_EMAIL"])
-            ->subject($_ENV["EMAIL_TITLE"] ?? "Weather Station Report")
+            ->subject($emailTitle)
             ->html(
                 $this->templating->render(
-                    '/sensor/weatherStationReport.html.twig',
-                    $massagedData
+                    $twigEmail,
+                    $sensorData
                 ),
                 'text/html'
             );
-        $this->mailer->send($message);
-        $entityManager = $args->getObjectManager();
+     //   if (1===2) {
+            $this->mailer->send($message);
+            $entityManager = $args->getObjectManager();
 
-        // Update Email Report table after email is sent.
-        $weatherReport = new WeatherReportEntity();
-        $weatherReport->setEmailBody('TODO');
-        $weatherReport->setLastSentCounter($reportData['counter']);
+            // Update Email Report table after email is sent.
+            $weatherReport = new WeatherReportEntity();
+            $weatherReport->setEmailBody('TODO');
+            $weatherReport->setLastSentCounter($reportData['counter']);
 
-        $reportData['currentDateTime']->format('Y-m-d');
+            $reportData['currentDateTime']->format('Y-m-d');
 
-        $weatherReport->setLastSentDate($reportData['currentDateTime']);
-        $reportData['currentDateTime']->format('H:i:s');
-        $weatherReport->setLastSentTime($reportData['currentDateTime']);
+            $weatherReport->setLastSentDate($reportData['currentDateTime']);
+            $reportData['currentDateTime']->format('H:i:s');
+            $weatherReport->setLastSentTime($reportData['currentDateTime']);
 
-        $entityManager->persist($weatherReport);
-        $entityManager->flush();
+            $entityManager->persist($weatherReport);
+            $entityManager->flush();
 
-        $this->logger->log('Daily Report Log, Sent!',
-            $reportData, Logger::DEBUG
-        );
+            $this->logger->log('Daily Report Log, Sent!',
+                $reportData, Logger::DEBUG
+            );
+   //     }
+
     }
 
     /**
@@ -209,8 +241,7 @@ class PostListener {
             }
         }
         if (empty($prepareData)) {
-            $this->logger->error('Daily Report No Data'
-            );
+            $this->logger->log('Daily Report No Data', ['method' => __FUNCTION__], Logger::INFO);
         }
         $weatherData = ['weatherData' => $prepareData];
         // Data ready to be sent to twig.
