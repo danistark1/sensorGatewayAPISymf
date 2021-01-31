@@ -56,4 +56,3 @@ services:
                 - !php/const Monolog\Logger::ERROR
 
         # ...
-
