@@ -33,12 +33,12 @@ services:
     App\Listeners\PostListener:
         tags:
             - { name: doctrine.event_listener, event: postPersist }
-
-        # ...
+#            - { name: doctrine.event_listener, event: postFlush }
 
         # Common handler that will allow us to log various information
     monolog.db_handler:
         class: App\Logger\MonologDBHandler
+        public: true
             # The 'services' type handlers must be configured manually, as specified here: https://github.com/symfony/monolog-bundle/issues/116
             # The arguments that will go into the constructor
         arguments:

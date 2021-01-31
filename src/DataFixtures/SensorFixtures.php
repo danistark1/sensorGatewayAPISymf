@@ -4,7 +4,7 @@
  */
 namespace App\DataFixtures;
 
-use App\Entity\RoomGateway;
+use App\Entity\SensorEntity;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use DateTimeZone;
@@ -18,18 +18,18 @@ use App\Controller\SensorController;
 class SensorFixtures extends Fixture {
     public function load(ObjectManager $manager) {
         foreach ( self::getSensorFixtureData() as $sensorName => $sensorID) {
-            $roomGateway =  new RoomGateway();
-            $roomGateway->setRoom($sensorName);
-            $roomGateway->setStationId($sensorID);
+            $sensorEntity =  new SensorEntity();
+            $sensorEntity->setRoom($sensorName);
+            $sensorEntity->setStationId($sensorID);
             $randTemp = rand(-40, 40);
             $randHumidity = rand(10, 99);
-            $roomGateway->setHumidity($randHumidity);
-            $roomGateway->setTemperature($randTemp);
+            $sensorEntity->setHumidity($randHumidity);
+            $sensorEntity->setTemperature($randTemp);
             $dt = new \DateTime();
             $dt->format('Y-m-d H:i:s');
             $dt->setTimezone(new DateTimeZone('America/Toronto'));
-            $roomGateway->setInsertDateTime($dt);
-            $manager->persist($roomGateway);
+            $sensorEntity->setInsertDateTime($dt);
+            $manager->persist($sensorEntity);
             $manager->flush();
         }
     }

@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Logger;
-use App\Entity\WeatherLogger;
+use App\Entity\WeatherLoggerEntity;
 use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
@@ -13,9 +13,9 @@ class MonologDBHandler extends AbstractProcessingHandler {
      */
     protected $em;
 
-    public function __construct(EntityManagerInterface $em, $level = Logger::ALERT, $bubble = true) {
+    public function __construct(EntityManagerInterface $em, $level = Logger::API, $bubble = true) {
         $this->em = $em;
-        parent::__construct();
+        parent::__construct($level, $bubble);
     }
 
     /**
@@ -23,7 +23,7 @@ class MonologDBHandler extends AbstractProcessingHandler {
      *
      * @param array $record
      */
-    protected function write(array $record): void {
+    public function write(array $record): void {
         // Check if debugging is enabled.
         if (isset($_ENV['DEBUG']) && $_ENV['DEBUG'] == 1) {
             //if( 'doctrine' == $record['channel'] ) {
@@ -33,7 +33,7 @@ class MonologDBHandler extends AbstractProcessingHandler {
 //            }
 
             try {
-                $logEntry = new WeatherLogger();
+                $logEntry = new WeatherLoggerEntity();
                 $logEntry->setMessage($record['message']);
                 $logEntry->setLevel($record['level']);
                 $logEntry->setLevelName($record['level_name']);
@@ -56,7 +56,6 @@ class MonologDBHandler extends AbstractProcessingHandler {
                 $this->em->persist($logEntry);
                 $this->em->flush();
             } catch (\Exception $e) {
-
                 error_log($record['message']);
                 error_log($e->getMessage());
             }

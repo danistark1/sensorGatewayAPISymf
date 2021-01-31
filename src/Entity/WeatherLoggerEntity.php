@@ -7,8 +7,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass=WeatherLoggerRepository::class)
+ * @ORM\Table(name="weatherLogger")
  */
-class WeatherLogger
+class WeatherLoggerEntity
 {
     /**
      * @ORM\Id

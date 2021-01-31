@@ -5,7 +5,7 @@
 namespace App\Tests;
 use App\Controller\SensorController;
 use App\DataFixtures\SensorFixtures;
-use App\Entity\RoomGateway;
+use App\Entity\SensorEntity;
 use Doctrine\ORM\EntityManager;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +26,7 @@ class SensorControllerTests extends AbstractControllerTest {
      */
     public function testValidSensorControllerGetByID(int $stationID, string $expectedSensorName): void {
         $this->loadFixture(new SensorFixtures());
-        self::$client->request('GET', '/weatherstationapi/'.$stationID);
+        self::$client->request('GET', '/weatherstation/api/id/'.$stationID);
         $response = self::$client->getResponse();
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         $responseContent = json_decode($response->getContent())[0];
@@ -38,12 +38,12 @@ class SensorControllerTests extends AbstractControllerTest {
      */
     public function testInvalidSensorControllerGetByID(): void {
         $randomID = 1234567;
-        self::$client->request('GET', '/weatherstationapi/'.$randomID);
+        self::$client->request('GET', '/weatherstation/api/id/'.$randomID);
         $response = self::$client->getResponse();
         $responseCode = $response->getStatusCode();
         $responseMsg = $response->getContent();
         $this->assertEquals(SensorController::STATUS_VALIDATION_FAILED, $responseCode);
-        $this->assertEquals('Invalid Room ID.', $responseMsg);
+        $this->assertEquals(SensorController::VALIDATION_STATION_ID, $responseMsg);
     }
 
     /**
@@ -55,7 +55,7 @@ class SensorControllerTests extends AbstractControllerTest {
      */
     public function testValidSensorControllerGetByName(int $stationID, string $expectedSensorName): void {
         $this->loadFixture(new SensorFixtures());
-        self::$client->request('GET', '/weatherstationapi/'.$expectedSensorName);
+        self::$client->request('GET', '/weatherstation/api/name/'.$expectedSensorName);
         $response = self::$client->getResponse();
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         $responseContent = json_decode($response->getContent())[0];
@@ -68,12 +68,12 @@ class SensorControllerTests extends AbstractControllerTest {
      */
     public function testInvalidSensorControllerGetByName(): void {
         $randomName = 'abcdefg';
-        self::$client->request('GET', '/weatherstationapi/'.$randomName);
+        self::$client->request('GET', '/weatherstation/api/name/'.$randomName);
         $response = self::$client->getResponse();
         $responseCode = $response->getStatusCode();
         $responseMsg = $response->getContent();
         $this->assertEquals(SensorController::STATUS_VALIDATION_FAILED, $responseCode);
-        $this->assertEquals('Invalid Room Name.', $responseMsg);
+        $this->assertEquals(SensorController::VALIDATION_STATION_NAME, $responseMsg);
     }
 
     /**
