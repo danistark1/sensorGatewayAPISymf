@@ -12,13 +12,11 @@ use App\Repository\SensorRepository;
 use DateInterval;
 use DateTime;
 use Exception;
-
 use Monolog\Logger;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
@@ -58,14 +56,10 @@ class SensorController extends AbstractController {
     private $request;
 
     /**
-     * @var Kernel
-     */
-    private $kernel;
-
-    /**
      * @var SensorRepository
      */
     private $sensorRepository;
+
     /**
      * @var WeatherStationLogger
      */
@@ -75,23 +69,14 @@ class SensorController extends AbstractController {
      * SensorController constructor.
      *
      * @param SensorRepository|null $sensorRepository
+     * @param WeatherStationLogger $logger
      */
-    public function __construct(SensorRepository $sensorRepository = null, WeatherStationLogger $logger) {
+    public function __construct(SensorRepository $sensorRepository, WeatherStationLogger $logger) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
         $this->request  = new Request();
         $this->logger = $logger;
         $this->sensorRepository = $sensorRepository;
-    }
-
-    /**
-     * @param WeatherLoggerEntity $logger1
-     * @return Response
-     * @Route("/weatherstation/api/", methods={"GET"}, name="index")
-     */
-    public function index() {
-//       $logger->log('This is a test', ['id' => 6126, 'name'=>'sensorname'], Logger::DEBUG);
-//        return $this->render('base.html.twig');
     }
 
     /**
@@ -283,7 +268,6 @@ class SensorController extends AbstractController {
      * @throws \Doctrine\ORM\OptimisticLockException
      */
     public function delete(array $params): Response {
-
         //TODO Validate delete parsms.
         $this->sensorRepository->delete($params);
         $this->response->setStatusCode(self::STATUS_OK);
@@ -328,6 +312,7 @@ class SensorController extends AbstractController {
                 }
 
                 $result = $this->sensorRepository->save($parameters);
+                // TODO UPDATE date for both tables to be insert_date_time.
                 if ($result) {
                     // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
                     // keeping weather data for 24hrs.
