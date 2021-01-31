@@ -240,8 +240,8 @@ class PostListener {
                 $notificationsEmailData[$key]['humidity']['lower'] = 'Lower Humidity Threshold Reached ';
                 $notificationsEmailData[$key]['humidity']['value'] = $massagedData[$key]['humidity'];
             }
-            $notificationsEmailData = ['notificationsData' => $notificationsEmailData];
         }
+        $notificationsEmailData = ['notificationsData' => $notificationsEmailData];
         return $notificationsEmailData;
     }
 
