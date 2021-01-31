@@ -282,6 +282,7 @@ class PostListener {
             $this->logger->log('Invalid Emails.', ['sender' => __FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
             return $success = false;
         }
+        dump($sensorData);
         if ($valid && !empty($sensorData))  {
             $message = (new Email())
                 ->from($_ENV["FROM_EMAIL"])
