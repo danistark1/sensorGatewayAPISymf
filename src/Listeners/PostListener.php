@@ -5,14 +5,21 @@
 namespace App\Listeners;
 
 use App\Controller\SensorController;
-use App\Entity\RoomGateway;
-use App\Entity\WeatherReport;
+use App\Entity\SensorEntity;
+use App\Entity\WeatherReportEntity;
+use App\Logger\MonologDBHandler;
+use App\WeatherStationLogger;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostFlushEventArgs;
+use Doctrine\ORM\ORMException;
+use Doctrine\ORM\ORMInvalidArgumentException;
+use Doctrine\Persistence\Event\PreUpdateEventArgs;
 use Monolog\Logger;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use App\Utils\StationDateTime;
-use Psr\Log\LoggerInterface;
+use App\Kernel;
 
 /**
  * Class PostListener
@@ -33,15 +40,19 @@ class PostListener {
      */
     public $mailer;
 
+    private $logger;
+
     /**
      * PostListener constructor.
      *
      * @param \Twig\Environment $templating
      * @param MailerInterface $mailer
+     * @param Kernel|null $kernel
      */
-    public function __construct(\Twig\Environment $templating, MailerInterface $mailer) {
+    public function __construct(\Twig\Environment $templating, MailerInterface $mailer, WeatherStationLogger $logger) {
         $this->templating = $templating;
         $this->mailer = $mailer;
+        $this->logger = $logger;
     }
 
     /**
@@ -55,14 +66,12 @@ class PostListener {
      * @throws \Exception
      */
     public function postPersist(LifecycleEventArgs $args) {
-        $entity = $args->getObject();
-        $reportConfig = $_ENV["READING_REPORT_ENABLED"] ?? false;
-        $reportEnabled = $reportConfig && $reportConfig == 1;
+        $postInstance = $args->getEntity();
+        $reportEnabled = $_ENV["READING_REPORT_ENABLED"] ?? false;
         // only act on "Room" entity
-        if (!$entity instanceof RoomGateway || !$reportEnabled) {
-            return;
+        if (($postInstance instanceof SensorEntity) && $reportEnabled) {
+            $this->prepareReportData($args);
         }
-        $this->prepareReportData($args);
     }
 
     /**
@@ -80,7 +89,7 @@ class PostListener {
 
         // Get the last inserted report.
         $entityManager = $args->getObjectManager();
-        $reportDataDb = $entityManager->getRepository(WeatherReport::class)->findBy(
+        $reportDataDb = $entityManager->getRepository(WeatherReportEntity::class)->findBy(
             array(),
             array('id'=>'DESC'),
             1,
@@ -154,7 +163,7 @@ class PostListener {
         $entityManager = $args->getObjectManager();
 
         // Update Email Report table after email is sent.
-        $weatherReport = new WeatherReport();
+        $weatherReport = new WeatherReportEntity();
         $weatherReport->setEmailBody('TODO');
         $weatherReport->setLastSentCounter($reportData['counter']);
 
@@ -166,8 +175,9 @@ class PostListener {
 
         $entityManager->persist($weatherReport);
         $entityManager->flush();
-        SensorController::getLoggerService()->error('Daily Report Log',
-            $reportData
+
+        $this->logger->log('Daily Report Log, Sent!',
+            $reportData, Logger::DEBUG
         );
     }
 
@@ -184,7 +194,7 @@ class PostListener {
         // Remove any invalid entries before calling temp & humidity methods on an empty array.
         $prepareData = $weatherData =  [];
         foreach ($stationIDs as $room => $stationID) {
-            $roomData = $entityManager->getRepository(RoomGateway::class)->findBy(
+            $roomData = $entityManager->getRepository(SensorEntity::class)->findBy(
                 [
                     'station_id' => $stationID
                 ],
@@ -199,7 +209,7 @@ class PostListener {
             }
         }
         if (empty($prepareData)) {
-            SensorController::getLoggerService()->error('Daily Report No Data'
+            $this->logger->error('Daily Report No Data'
             );
         }
         $weatherData = ['weatherData' => $prepareData];

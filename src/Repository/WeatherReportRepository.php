@@ -2,21 +2,21 @@
 
 namespace App\Repository;
 
-use App\Entity\WeatherReport;
+use App\Entity\WeatherReportEntity;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @method WeatherReport|null find($id, $lockMode = null, $lockVersion = null)
- * @method WeatherReport|null findOneBy(array $criteria, array $orderBy = null)
- * @method WeatherReport[]    findAll()
- * @method WeatherReport[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method WeatherReportEntity|null find($id, $lockMode = null, $lockVersion = null)
+ * @method WeatherReportEntity|null findOneBy(array $criteria, array $orderBy = null)
+ * @method WeatherReportEntity[]    findAll()
+ * @method WeatherReportEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class WeatherReportRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, WeatherReport::class);
+        parent::__construct($registry, WeatherReportEntity::class);
     }
 
     // /**

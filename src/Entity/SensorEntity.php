@@ -5,13 +5,15 @@
 
 namespace App\Entity;
 
-use App\Repository\RoomGatewayRepository;
+use App\Repository\SensorRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass=RoomGatewayRepository::class)
+ * @ORM\Entity(repositoryClass=SensorRepository::class)
+ * @ORM\Table(name="sensorEntity")
  */
-class RoomGateway {
+class SensorEntity {
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue

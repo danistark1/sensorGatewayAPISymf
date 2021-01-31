@@ -4,22 +4,25 @@
  */
 namespace App\Repository;
 
-use App\Entity\RoomGateway;
+use App\Entity\SensorEntity;
 use App\Utils\StationDateTime;
+use App\WeatherStationLogger;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\ORMException;
 use Doctrine\ORM\ORMInvalidArgumentException;
 use Doctrine\Persistence\ManagerRegistry;
+use Monolog\Logger;
 
 /**
- * @method RoomGateway|null find($id, $lockMode = null, $lockVersion = null)
- * @method RoomGateway|null findOneBy(array $criteria, array $orderBy = null)
- * @method RoomGateway[]    findAll()
- * @method RoomGateway[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method SensorEntity|null find($id, $lockMode = null, $lockVersion = null)
+ * @method SensorEntity|null findOneBy(array $criteria, array $orderBy = null)
+ * @method SensorEntity[]    findAll()
+ * @method SensorEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class RoomGatewayRepository extends ServiceEntityRepository {
+class SensorRepository extends ServiceEntityRepository {
+
     public function __construct(ManagerRegistry $registry) {
-        parent::__construct($registry, RoomGateway::class);
+        parent::__construct($registry, SensorEntity::class);
     }
 
 
@@ -60,7 +63,7 @@ class RoomGatewayRepository extends ServiceEntityRepository {
         $operation = $params['operation'];
 
         $results  = $qb->select('p')
-            ->from(RoomGateway::class, 'p')
+            ->from(SensorEntity::class, 'p')
             ->where('p.'.$field. $operation. ' :'.$field)
             ->setParameter($field, $value)
             ->getQuery()
@@ -79,7 +82,7 @@ class RoomGatewayRepository extends ServiceEntityRepository {
      */
     public function save(array $params) {
         $em = $this->getEntityManager();
-        $roomGateway = new RoomGateway();
+        $roomGateway = new SensorEntity();
         $roomGateway->setRoom($params['room']);
         $roomGateway->setHumidity($params['humidity']);
         $roomGateway->setTemperature($params['temperature']);
@@ -91,6 +94,7 @@ class RoomGatewayRepository extends ServiceEntityRepository {
             $em->persist($roomGateway);
         } catch (ORMInvalidArgumentException | ORMException $e) {
             $result = false;
+           //$this->logger->log('test', [], Logger::CRITICAL);
         }
         $em->flush();
         return $result;
