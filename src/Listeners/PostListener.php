@@ -314,7 +314,6 @@ class PostListener {
         // Update Email Report table after email is sent.
         $weatherReport = new WeatherReportEntity();
         $weatherReport->setEmailBody($reportType);
-        dump($lastSentReport);
         $weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? 2 : 1);
 
         $weatherReport->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
