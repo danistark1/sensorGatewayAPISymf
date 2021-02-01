@@ -8,6 +8,7 @@ use App\Controller\SensorController;
 use App\Entity\SensorEntity;
 use App\Entity\WeatherReportEntity;
 use App\Logger\MonologDBHandler;
+use App\Repository\WeatherReportRepository;
 use App\Utils\ArraysUtils;
 use App\WeatherStationLogger;
 use Doctrine\ORM\EntityManager;
@@ -73,6 +74,8 @@ class PostListener {
      */
     private $entityManager;
 
+    private $weatherReportRepository;
+
     /**
      * PostListener constructor.
      *
@@ -80,10 +83,15 @@ class PostListener {
      * @param MailerInterface $mailer
      * @param WeatherStationLogger $logger
      */
-    public function __construct(Environment $templating, MailerInterface $mailer, WeatherStationLogger $logger) {
+    public function __construct(
+        Environment $templating,
+        MailerInterface $mailer,
+        WeatherStationLogger $logger,
+    WeatherReportRepository $weatherReportRepository) {
         $this->templating = $templating;
         $this->mailer = $mailer;
         $this->logger = $logger;
+        $this->weatherReportRepository = $weatherReportRepository;
     }
 
     /**
@@ -317,23 +325,29 @@ class PostListener {
     private function updateWeatherReport($reportType) {
         $lastSentReport = $this->getLastSentReport($reportType);
         // Update Email Report table after email is sent.
-        $weatherReport = new WeatherReportEntity();
-        $weatherReport->setEmailBody($reportType);
-        $weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1);
-        $weatherReport->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
-        $weatherReport->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
-        try {
-            $this->entityManager->persist($weatherReport);
+//        $weatherReport = new WeatherReportEntity();
+//        $weatherReport->setEmailBody($reportType);
+        $counter = isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1;
+        //$weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1);
+//        $weatherReport->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
+//        $weatherReport->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
 
-        } catch (ORMException $e) {
-            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
-        }
-        try {
-            $this->entityManager->flush();
-        } catch (OptimisticLockException | ORMException $e) {
-            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
-        }
-        $this->entityManager->clear();
+       // try {
+            $this->weatherReportRepository->save(
+                ['counter' => $counter,
+                    'emailBody' =>$reportType]
+            );
+            //$this->entityManager->persist($weatherReport);
+
+//        } catch (ORMException $e) {
+//            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
+//        }
+//        try {
+//            $this->entityManager->flush();
+//        } catch (OptimisticLockException | ORMException $e) {
+//            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
+//        }
+      //  $this->entityManager->clear();
 
     }
 }

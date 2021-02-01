@@ -2,8 +2,12 @@
 
 namespace App\Repository;
 
+use App\Entity\SensorEntity;
 use App\Entity\WeatherReportEntity;
+use App\Utils\StationDateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\ORMException;
+use Doctrine\ORM\ORMInvalidArgumentException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -36,6 +40,31 @@ class WeatherReportRepository extends ServiceEntityRepository
     }
     */
 
+    /**
+     * Save Sensor record to the database.
+     *
+     * @param array $params Post data.
+     * @return bool True is operation is successful, false otherwise.
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function save(array $params) {
+        $em = $this->getEntityManager();
+        $weatherEntity = new WeatherReportEntity();
+        $weatherEntity->setLastSentCounter($params['counter']);
+        $weatherEntity->setEmailBody($params['emailBody']);
+        $weatherEntity->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
+        $weatherEntity->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
+        $result = true;
+        try {
+            $em->persist($weatherEntity);
+        } catch (ORMInvalidArgumentException | ORMException $e) {
+            $result = false;
+            //$this->logger->log('test', [], Logger::CRITICAL);
+        }
+        $em->flush();
+        return $result;
+    }
     /*
     public function findOneBySomeField($value): ?WeatherReport
     {
