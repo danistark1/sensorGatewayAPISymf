@@ -111,31 +111,31 @@ class PostListener {
             if ($shouldSendNotificationReport && $notificationsReportEnabled) {
                 try {
                     $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
-                    if ($success) {
+                   // if ($success) {
                         $this->updateWeatherReport(self::REPORT_NOTIFICATIONS);
-                    }
+             //       }
 
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
                 }
             }
-
-             // Last Sent Daily Report
-            $lastSentDailyReport = $this->getLastSentReport(self::REPORT_DAILY);
-            // Get latest Sensor Readings.
-            $latestSensorData = $this->getLatestSensorData();
-            // Check if daily report needs to be sent.
-            $shouldSendReport = $this->shouldSendReport($lastSentDailyReport);
-            if ($shouldSendReport) {
-                try {
-                    $success = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
-                    if ($success) {
-                        $this->updateWeatherReport(self::REPORT_DAILY);
-                    }
-                } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
-                    $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
-                }
-            }
+//
+//             // Last Sent Daily Report
+//            $lastSentDailyReport = $this->getLastSentReport(self::REPORT_DAILY);
+//            // Get latest Sensor Readings.
+//            $latestSensorData = $this->getLatestSensorData();
+//            // Check if daily report needs to be sent.
+//            $shouldSendReport = $this->shouldSendReport($lastSentDailyReport);
+//            if ($shouldSendReport && $reportEnabled) {
+//                try {
+//                    $success = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
+//                    if ($success) {
+//                        $this->updateWeatherReport(self::REPORT_DAILY);
+//                    }
+//                } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
+//                    $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
+//                }
+//            }
 
         }
     }
@@ -151,24 +151,25 @@ class PostListener {
     private function shouldSendReport($lastSentDailyReport, string $reportType = ''): bool {
         $shouldSendReport = false;
 
+
         $firstReport = $reportType === 'notification' ? ($_ENV["FIRST_NOTIFICATION_TIME"] ?? self::FIRST_NOTIFICATION_TIME) : ($_ENV["FIRST_REPORT_TIME"] ?? self::FIRST_REPORT_TIME);
         $secondReport = $reportType === 'notification' ? ($_ENV["SECOND_NOTIFICATION_TIME"] ?? self::SECOND_NOTIFICATION_TIME) : ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME);
 
-
         $currentTime = StationDateTime::dateNow('', true, 'H:i:s');
+        $timerOk = $currentTime >= $firstReport || $currentTime >= $secondReport;
         $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : null;
-        if ($lastReportLastCounter === 2) {
-            return false;
-        }
-        if (empty($lastSentDailyReport)) {
-            if ($currentTime >= $firstReport) {
+
+        if (!empty($lastSentDailyReport)) {
+            // check if first or second report
+            if ($lastReportLastCounter === 2) {
+                return $shouldSendReport = false;
+            } elseif ($lastReportLastCounter === 1 && $timerOk) {
                 $shouldSendReport = true;
-                //first report of the day send!
             }
         } else {
-            if($currentTime >= $secondReport &&  ($lastReportLastCounter < 2)) {
+            // empty shoud send
+            if ($timerOk) {
                 $shouldSendReport = true;
-                //second report send
             }
         }
         return $shouldSendReport;
