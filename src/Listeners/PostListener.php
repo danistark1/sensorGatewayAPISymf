@@ -97,8 +97,9 @@ class PostListener {
         $this->entityManager = $args->getObjectManager();
         $postInstance = $args->getEntity();
         $reportEnabled = $_ENV["READING_REPORT_ENABLED"] ?? false;
+        $notificationsReportEnabled = $_ENV["NOTIFICATIONS_REPORT_ENABLED"] ?? false;
         // only act on "Sensor" entity
-        if (($postInstance instanceof SensorEntity) && $reportEnabled) {
+        if (($postInstance instanceof SensorEntity) && ($reportEnabled || $notificationsReportEnabled)) {
             // Prepare notifications report
             $latestNotificationsData = $this->prepareNotifications();
 
@@ -106,7 +107,7 @@ class PostListener {
             $lastSentNotificationReport = $this->getLastSentReport(self::REPORT_NOTIFICATIONS);
             // Check if notification report needs to be sent.
             $shouldSendNotificationReport = $this->shouldSendReport($lastSentNotificationReport,'notification');
-            $notificationsReportEnabled = $_ENV["NOTIFICATIONS_REPORT_ENABLED"];
+
             if ($shouldSendNotificationReport && $notificationsReportEnabled) {
                 try {
                     $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
@@ -217,7 +218,7 @@ class PostListener {
             array('id'=>'DESC'),
             1,
             0);
-
+        $this->entityManager->clear();
         return $reportDataDb;
     }
 
@@ -317,12 +318,12 @@ class PostListener {
         // Update Email Report table after email is sent.
         $weatherReport = new WeatherReportEntity();
         $weatherReport->setEmailBody($reportType);
-        $weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? 2 : 1);
-
+        $weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1);
         $weatherReport->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
         $weatherReport->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
         try {
             $this->entityManager->persist($weatherReport);
+
         } catch (ORMException $e) {
             $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
         }
@@ -331,6 +332,7 @@ class PostListener {
         } catch (OptimisticLockException | ORMException $e) {
             $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
         }
+        $this->entityManager->clear();
 
     }
 }
