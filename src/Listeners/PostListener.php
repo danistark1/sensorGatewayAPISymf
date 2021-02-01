@@ -156,6 +156,9 @@ class PostListener {
 
         $currentTime = StationDateTime::dateNow('', true, 'H:i:s');
         $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : null;
+        if ($lastReportLastCounter === 2) {
+            return false;
+        }
         if (empty($lastSentDailyReport)) {
             if ($currentTime >= $firstReport) {
                 $shouldSendReport = true;
