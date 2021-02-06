@@ -33,7 +33,7 @@ class SensorRepository extends ServiceEntityRepository {
      * @return array
      */
     public function findByQuery(array $params): array {
-        $sensorData = parent::findBy($params);
+        $sensorData = parent::findBy($params,[], 10);
         return $sensorData;
     }
 
