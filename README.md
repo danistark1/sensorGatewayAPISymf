@@ -53,20 +53,21 @@ My ex.
 - SENSOR_CONFIG_LIVING_ROOM=15043
 - SENSOR_CONFIG_OUTSIDE=12154
 
-# Notifications configs
+**Notifications configs**
 
 Every configured sensor can have an upper, lower threshold. Config should start with 
-- SENSOR_SENORNAME_LOWER_TEMPERATURE=
-- SENSOR_SENORNAME_LOWER_HUMIDITY=
-- SENSOR_SENORNAME_UPPER_TEMPERATURE=
-- SENSOR_SENORNAME_UPPER_HUMIDITY=
+
+- SENSOR_SENSORNAME_LOWER_TEMPERATURE=
+- SENSOR_SENSORNAME_LOWER_HUMIDITY=
+- SENSOR_SENSORNAME_UPPER_TEMPERATURE=
+- SENSOR_SENSORNAME_UPPER_HUMIDITY=
 
 If lower or upper threshold is reached, an email is sent twice a day based on the configuration
 
 - FIRST_NOTIFICATION_TIME="06:00:00"
 - SECOND_NOTIFICATION_TIME="12:00:00"
 
-# Pruning
+**Pruning**
 
 Everytime a new record is added, report, logging & sensor readings data will be pruned based on the below configured intervals.
 
