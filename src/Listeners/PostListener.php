@@ -119,16 +119,17 @@ class PostListener {
         $notificationsReportEnabled = $_ENV["NOTIFICATIONS_REPORT_ENABLED"] ?? false;
         // only act on "Sensor" entity
         if (($postInstance instanceof SensorEntity) && ($reportEnabled || $notificationsReportEnabled)) {
-
+            /// Get latest Sensor Readings.
+            $latestSensorData = $this->getLatestSensorData();
             // Prepare notifications report
-            $latestNotificationsData = $this->prepareNotifications();
+            $latestNotificationsData = $this->prepareNotifications($latestSensorData);
 
             // Last Sent Notifications Report
             $lastSentNotificationReport = $this->getLastSentReport(self::REPORT_NOTIFICATIONS);
             // Check if notification report needs to be sent.
             $shouldSendNotificationReport = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
 
-            if ($shouldSendNotificationReport && $notificationsReportEnabled) {
+            if ($shouldSendNotificationReport && $notificationsReportEnabled && !empty($latestNotificationsData)) {
                 try {
                     $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
                     if ($success === true) {
@@ -139,23 +140,22 @@ class PostListener {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
                 }
             }
-//
-//             // Last Sent Daily Report
-//            $lastSentDailyReport = $this->getLastSentReport(self::REPORT_DAILY);
-//            // Get latest Sensor Readings.
-//            $latestSensorData = $this->getLatestSensorData();
-//            // Check if daily report needs to be sent.
-//            $shouldSendReport = $this->shouldSendReport($lastSentDailyReport);
-//            if ($shouldSendReport && $reportEnabled) {
-//                try {
-//                    $success = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
-//                    if ($success) {
-//                        $this->updateWeatherReport(self::REPORT_DAILY);
-//                    }
-//                } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
-//                    $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
-//                }
-//            }
+
+             // Last Sent Daily Report
+            $lastSentDailyReport = $this->getLastSentReport(self::REPORT_DAILY);
+
+            // Check if daily report needs to be sent.
+            $shouldSendReport = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
+            if ($shouldSendReport && $reportEnabled && !empty($latestSensorData)) {
+                try {
+                    $success = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
+                    if ($success) {
+                        $this->updateWeatherReport(self::REPORT_DAILY);
+                    }
+                } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
+                    $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
+                }
+            }
 
         }
     }
@@ -200,21 +200,20 @@ class PostListener {
      */
     private function getLatestSensorData(): array {
         // Construct station IDs array.
-        $stationIDs = SensorController::constructSensorData();
+        $stationSensorConfigs = SensorController::constructSensorData();
+        // ["bedroom" => "6126"
+        //  "basement" => "3026"
+        //   "garage" => "8166"
+        //   "living_room" => "15043"
+        //   "outside" => "12154"]
         // Remove any invalid entries before calling temp & humidity methods on an empty array.
         $prepareData = $weatherData =  [];
-        foreach ($stationIDs as $room => $stationID) {
-            $roomData = $this->entityManager->getRepository(SensorEntity::class)->findBy(
-                [
-                    'station_id' => $stationID
-                ],
-                [
-                    'id' => 'DESC'
-                ]);
-            if(!empty($roomData)) {
-                $prepareData[$room] = [
-                    'temperature' => $roomData[0]->getTemperature(),
-                    'humidity' => $roomData[0]->getHumidity()
+        foreach ($stationSensorConfigs as $sensorName => $stationID) {
+            $sensorData = $this->entityManager->getRepository(SensorEntity::class)->findOrdered($sensorName);
+            if(!empty($sensorData)) {
+                $prepareData[$sensorName] = [
+                    'temperature' => $sensorData[0]->getTemperature(),
+                    'humidity' => $sensorData[0]->getHumidity()
                 ];
             }
         }
@@ -248,8 +247,8 @@ class PostListener {
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError
      */
-    private function prepareNotifications(): array {
-        $massagedData = $this->getLatestSensorData()['weatherData'];
+    private function prepareNotifications($latestSensorData): array {
+        $massagedData = $latestSensorData['weatherData'];
         $notificationsSetThresholds = SensorController::constructNotificationsData();
         // Loop over configured Thresholds, send email.
         $notificationsEmailData = [];
@@ -293,9 +292,11 @@ class PostListener {
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError
+     * @return bool
      */
-    private function sendReport(array $sensorData, string $twigEmail, $emailTitle = 'Report'): bool {
+    private function sendReport(array $sensorData, string $twigEmail, string $emailTitle = 'Report'): bool {
         $success = true;
+        $valid = false;
         $emailsArray = [
             'from' => $_ENV["FROM_EMAIL"],
             'to' => $_ENV["TO_EMAIL"]
@@ -328,9 +329,8 @@ class PostListener {
                 );
 
             }
-
-            return $success;
         }
+        return $success;
     }
 
     /**
@@ -342,29 +342,14 @@ class PostListener {
     private function updateWeatherReport($reportType) {
         $lastSentReport = $this->getLastSentReport($reportType);
         // Update Email Report table after email is sent.
-//        $weatherReport = new WeatherReportEntity();
-//        $weatherReport->setEmailBody($reportType);
         $counter = isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1;
-        //$weatherReport->setLastSentCounter(isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1);
-//        $weatherReport->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
-//        $weatherReport->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
-
-       // try {
+        try {
             $this->weatherReportRepository->save(
                 ['counter' => $counter,
                     'emailBody' =>$reportType]
             );
-            //$this->entityManager->persist($weatherReport);
-
-//        } catch (ORMException $e) {
-//            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
-//        }
-//        try {
-//            $this->entityManager->flush();
-//        } catch (OptimisticLockException | ORMException $e) {
-//            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
-//        }
-      //  $this->entityManager->clear();
-
+        } catch (OptimisticLockException | ORMException $e) {
+            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
+        }
     }
 }
