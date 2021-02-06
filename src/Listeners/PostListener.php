@@ -55,6 +55,16 @@ class PostListener {
     private const THIRD_NOTIFICATION_TIME = "22:00:00";
 
     /**
+     * Notification type - notification
+     */
+    private const REPORT_TYPE_NOTIFICATION = 'notification';
+
+    /**
+     * Notification type - report
+     */
+    private const REPORT_TYPE_REPORT = 'report';
+
+    /**
      * @var Environment
      */
     public $templating;
@@ -82,12 +92,13 @@ class PostListener {
      * @param Environment $templating
      * @param MailerInterface $mailer
      * @param WeatherStationLogger $logger
+     * @param WeatherReportRepository $weatherReportRepository
      */
     public function __construct(
         Environment $templating,
         MailerInterface $mailer,
         WeatherStationLogger $logger,
-    WeatherReportRepository $weatherReportRepository) {
+        WeatherReportRepository $weatherReportRepository) {
         $this->templating = $templating;
         $this->mailer = $mailer;
         $this->logger = $logger;
@@ -108,20 +119,21 @@ class PostListener {
         $notificationsReportEnabled = $_ENV["NOTIFICATIONS_REPORT_ENABLED"] ?? false;
         // only act on "Sensor" entity
         if (($postInstance instanceof SensorEntity) && ($reportEnabled || $notificationsReportEnabled)) {
+
             // Prepare notifications report
             $latestNotificationsData = $this->prepareNotifications();
 
             // Last Sent Notifications Report
             $lastSentNotificationReport = $this->getLastSentReport(self::REPORT_NOTIFICATIONS);
             // Check if notification report needs to be sent.
-            $shouldSendNotificationReport = $this->shouldSendReport($lastSentNotificationReport,'notification');
+            $shouldSendNotificationReport = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
 
             if ($shouldSendNotificationReport && $notificationsReportEnabled) {
                 try {
                     $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
-                   // if ($success) {
+                    if ($success === true) {
                         $this->updateWeatherReport(self::REPORT_NOTIFICATIONS);
-             //       }
+                    }
 
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
@@ -158,8 +170,6 @@ class PostListener {
      */
     private function shouldSendReport($lastSentDailyReport, string $reportType = ''): bool {
         $shouldSendReport = false;
-
-
         $firstReport = $reportType === 'notification' ? ($_ENV["FIRST_NOTIFICATION_TIME"] ?? self::FIRST_NOTIFICATION_TIME) : ($_ENV["FIRST_REPORT_TIME"] ?? self::FIRST_REPORT_TIME);
         $secondReport = $reportType === 'notification' ? ($_ENV["SECOND_NOTIFICATION_TIME"] ?? self::SECOND_NOTIFICATION_TIME) : ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME);
 
@@ -284,7 +294,7 @@ class PostListener {
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError
      */
-    private function sendReport(array $sensorData, string $twigEmail, $emailTitle = 'Report') {
+    private function sendReport(array $sensorData, string $twigEmail, $emailTitle = 'Report'): bool {
         $success = true;
         $emailsArray = [
             'from' => $_ENV["FROM_EMAIL"],
@@ -293,9 +303,10 @@ class PostListener {
         $valid = ArraysUtils::validateEmails(($emailsArray));
         if (!$valid) {
             $this->logger->log('Invalid Emails.', ['sender' => __FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
-            return $success = false;
+
+            return !$success;
         }
-        if ($valid && !empty($sensorData))  {
+        if ($valid && !empty($sensorData)) {
             $message = (new Email())
                 ->from($_ENV["FROM_EMAIL"])
                 ->to($_ENV["TO_EMAIL"])
@@ -306,14 +317,20 @@ class PostListener {
                         $sensorData
                     ),
                     'text/html'
+                )
+            ;
+            try {
+                $this->mailer->send($message);
+            } catch (TransportExceptionInterface $exception) {
+                $success = false;
+                $this->logger->log($emailTitle . ' Not Sent!',
+                    $sensorData, Logger::DEBUG
                 );
-            $this->mailer->send($message);
 
-            $this->logger->log($emailTitle.' Sent!',
-                $sensorData, Logger::DEBUG
-            );
+            }
+
+            return $success;
         }
-        return $success;
     }
 
     /**
