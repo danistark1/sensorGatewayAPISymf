@@ -40,13 +40,14 @@ class SensorRepository extends ServiceEntityRepository {
     /**
      * Get a single record order by field name.
      *
+     * @param string $room Room
      * @param string $field Field to order by.
      * @param string $order The order.
      * @return array
      */
-    public function findOrdered($field = 'insert_date_time', $order = 'DESC'): array {
-        $sensorData = parent::findBy([], [$field => $order], 1 );
-        return $sensorData;
+    public function findOrdered(string $sensorName, $field = 'insert_date_time', $order = 'DESC'): array {
+       $sensorData = parent::findBy(['room'=> $sensorName], [$field => $order],1);
+       return $sensorData;
     }
 
     /**

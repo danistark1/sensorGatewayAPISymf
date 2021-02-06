@@ -80,21 +80,22 @@ class SensorController extends AbstractController {
     }
 
     /**
-     * Get latest/oldest weatherData.
-     * Params: order =>asc/desc,
-     *         orderField => humidity/temperature/station_id,room
-     * By default, gets latest record ordered by insert_date_time.
+     * Get latest/oldest weatherData by sensorName
+     * Params: order => asc/desc,
+     *         orderField => humidity/temperature/station_id,room (insert_date_time by default)
+     *         sensorName => (get by configured sensor names)
      *
      * @param Request $request
-     * @param WeatherStationLogger $logger
      * @return Response
      * @Route("/weatherstation/api/ordered", methods={"GET"}, name="get_by_ordered")
      */
     public function getByOrdered(Request $request): Response {
         $order = $request->get('order') ?? 'desc';
         $orderField = $request->get('orderField');
-        $isOrderValid  = ($orderField === 'temperature') ||  ($orderField === 'humidity');
-        if (!$isOrderValid) {
+        $sensorName = $request->get('sensorName');
+        $valid = $this->validateSensorName($sensorName);
+
+        if (!$valid) {
             $this->response->setContent(self::VALIDATION_FAILED);
             $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
             $this->logger->log(self::VALIDATION_FAILED, [
@@ -103,7 +104,7 @@ class SensorController extends AbstractController {
                 'orderField' => $orderField
             ], Logger::ALERT);
         } else {
-            $response = $this->sensorRepository->findOrdered($orderField, $order);
+            $response = $this->sensorRepository->findOrdered($sensorName, $orderField = 'insert_date_time', $order);
             $this->validateResponse($response);
         }
         return $this->response;
@@ -235,7 +236,7 @@ class SensorController extends AbstractController {
             );
         } else {
             $name = strtolower($name);
-            $valid = $this->validateRoom($name, __FUNCTION__);
+            $valid = $this->validateSensorName($name, __FUNCTION__);
             if ($valid) {
                 $response = $this->sensorRepository->findByQuery(['room' => $name]);
                 $this->validateResponse($response, $name);
@@ -305,7 +306,7 @@ class SensorController extends AbstractController {
                 $valid = $this->validatePost($parameters, __FUNCTION__);
             }
             if ($valid) {
-                $validRoom = $this->validateRoom($parameters['room'], __FUNCTION__);
+                $validRoom = $this->validateSensorName($parameters['room'], __FUNCTION__);
                 $validStation = $this->validateStationID($parameters['station_id'], __FUNCTION__);
                 if (!$validRoom || !$validStation) {
                     return $this->response;
@@ -380,7 +381,7 @@ class SensorController extends AbstractController {
      * @param string $sender Sending function.
      * @return bool|Response
      */
-    private function validateRoom(string $station, string $sender = '') {
+    private function validateSensorName(string $station, string $sender = '') {
         $valid = true;
         if (!isset(self::constructSensorData()[$station])) {
             $valid = false;
@@ -417,12 +418,12 @@ class SensorController extends AbstractController {
      */
     public static function constructSensorData(): array {
         $sensorData = [];
-        $lookupValue = 'SENSOR_';
+        $lookupValue = 'SENSOR_CONFIG_';
         $envArray = $_ENV;
         foreach($envArray as $key => $value) {
             $sensorConfig = str_contains($key, $lookupValue);
             if ($sensorConfig) {
-                $sensorData += [strtolower(substr($key,7, strlen($key)-7)) => $value];
+                $sensorData += [strtolower(substr($key,14, strlen($key)-7)) => $value];
             }
         }
         return $sensorData;
