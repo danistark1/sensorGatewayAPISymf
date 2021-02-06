@@ -250,25 +250,35 @@ class PostListener {
     private function prepareNotifications($latestSensorData): array {
         $massagedData = $latestSensorData['weatherData'];
         $notificationsSetThresholds = SensorController::constructNotificationsData();
+        $thresholdTempUpper = $thresholdTempLower = $thresholdHumidUpper = $thresholdHumidLower = false;
         // Loop over configured Thresholds, send email.
         $notificationsEmailData = [];
         foreach($massagedData as $key => $value) {
             if ($massagedData[$key]['temperature'] >= $notificationsSetThresholds['sensor_'.$key.'_upper_temperature']) {
+                $thresholdTempUpper = true;
                 $notificationsEmailData[$key]['temperature']['upper'] = 'Upper Temp Threshold Reached ';
                 $notificationsEmailData[$key]['temperature']['value'] = $massagedData[$key]['temperature'];
             } elseif($massagedData[$key]['temperature'] <= $notificationsSetThresholds['sensor_'.$key.'_lower_temperature']) {
+                $thresholdTempLower = true;
                 $notificationsEmailData[$key]['temperature']['lower'] = 'Lower Temp Threshold Reached ';
                 $notificationsEmailData[$key]['temperature']['value'] = $massagedData[$key]['temperature'];
             }
             if ($massagedData[$key]['humidity'] >= $notificationsSetThresholds['sensor_'.$key.'_upper_humidity']) {
+                $thresholdHumidUpper = true;
                 $notificationsEmailData[$key]['humidity']['upper'] = 'Upper Humidity Threshold Reached ';
                 $notificationsEmailData[$key]['humidity']['value'] =  $massagedData[$key]['humidity'];
             }elseif($massagedData[$key]['humidity'] <= $notificationsSetThresholds['sensor_'.$key.'_lower_humidity']) {
+                $thresholdHumidLower = true;
                 $notificationsEmailData[$key]['humidity']['lower'] = 'Lower Humidity Threshold Reached ';
                 $notificationsEmailData[$key]['humidity']['value'] = $massagedData[$key]['humidity'];
             }
         }
-        $notificationsEmailData = ['notificationsData' => $notificationsEmailData];
+        if ($thresholdTempUpper || $thresholdTempLower || $thresholdHumidUpper || $thresholdHumidLower) {
+            $notificationsEmailData = ['notificationsData' => $notificationsEmailData];
+        }else {
+            $notificationsEmailData = [];
+        }
+
         return $notificationsEmailData;
     }
 
