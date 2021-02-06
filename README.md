@@ -18,12 +18,12 @@ Symfony REST APIs for the weatherStation project https://github.com/danistark1/w
 
 DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 3306)/weatherStation
 
- **Email Configuration (For sensor readings report)**
+ **Configuration (For sensor readings report)**
 
 - MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 - FROM_EMAIL=
 - TO_EMAIL=
-- EMAIL_TITLE="Your sensor readings report title"
+- EMAIL_TITLE_DAILY_REPORT="Weather Station Report"
 - TIMEZONE="Default is America/Toronto"
 - FIRST_REPORT_TIME="Default 07:00:00" (Sensor readings report first send time)
 - SECOND_REPORT_TIME="Default 20:00:00"(Sensor readings report second send time)
@@ -32,6 +32,22 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
 
 Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using FIRST_REPORT_TIME & SECOND_REPORT_TIME).
+
+ **Configuration (For sensor notifications report)**
+
+Every configured sensor can have an upper, lower threshold. Config should start with 
+
+- SENSOR_SENSORNAME_LOWER_TEMPERATURE=
+- SENSOR_SENSORNAME_LOWER_HUMIDITY=
+- SENSOR_SENSORNAME_UPPER_TEMPERATURE=
+- SENSOR_SENSORNAME_UPPER_HUMIDITY=
+
+- EMAIL_TITLE_NOTIFICATIONS="Weather Station Thresholds"
+
+If lower or upper threshold is reached, an email is sent twice a day based on the configuration
+
+- FIRST_NOTIFICATION_TIME="06:00:00"
+- SECOND_NOTIFICATION_TIME="12:00:00"
 
 **Debugging**
 
@@ -52,20 +68,6 @@ My ex.
 - SENSOR_CONFIG_GARAGE=8166
 - SENSOR_CONFIG_LIVING_ROOM=15043
 - SENSOR_CONFIG_OUTSIDE=12154
-
-**Notifications configs**
-
-Every configured sensor can have an upper, lower threshold. Config should start with 
-
-- SENSOR_SENSORNAME_LOWER_TEMPERATURE=
-- SENSOR_SENSORNAME_LOWER_HUMIDITY=
-- SENSOR_SENSORNAME_UPPER_TEMPERATURE=
-- SENSOR_SENSORNAME_UPPER_HUMIDITY=
-
-If lower or upper threshold is reached, an email is sent twice a day based on the configuration
-
-- FIRST_NOTIFICATION_TIME="06:00:00"
-- SECOND_NOTIFICATION_TIME="12:00:00"
 
 **Pruning**
 
