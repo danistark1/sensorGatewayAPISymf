@@ -38,7 +38,7 @@ class MonologDBHandler extends AbstractProcessingHandler {
                 $logEntry->setLevel($record['level']);
                 $logEntry->setLevelName($record['level_name']);
                 $logDateTime = StationDateTime::dateNow();
-                $logEntry->setInsertDataTime($logDateTime);
+                $logEntry->setInsertDateTime($logDateTime);
 
                 if (is_array($record['extra'])) {
                     $logEntry->setExtra($record['extra']);

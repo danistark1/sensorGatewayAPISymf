@@ -330,6 +330,13 @@ class SensorController extends AbstractController {
                         'interval' => $_ENV["READINGS_REPORT_INTERVAL"] ?? 2,
 
                     ];
+                    $paramsLoggerData = [
+                        'tableName' => WeatherLoggerEntity::class,
+                        'dateTimeField' => 'insertDateTime',
+                        'interval' => $_ENV["LOGGER_DELETE_INTERVAL"] ?? 1,
+
+                    ];
+                    $this->sensorRepository->delete($paramsLoggerData);
                     $this->sensorRepository->delete($paramsSensorData);
                     $this->sensorRepository->delete($paramsReportData);
                     $this->response->setStatusCode(self::STATUS_OK);

@@ -46,7 +46,7 @@ class WeatherLoggerEntity
     /**
      * @ORM\Column(type="datetime", nullable=true)
      */
-    private $insertDataTime;
+    private $insertDateTime;
 
     /**
      * @ORM\PrePersist
@@ -121,14 +121,14 @@ class WeatherLoggerEntity
         return $this;
     }
 
-    public function getInsertDataTime(): ?\DateTimeInterface
+    public function getInsertDateTime(): ?\DateTimeInterface
     {
-        return $this->insertDataTime;
+        return $this->insertDateTime;
     }
 
-    public function setInsertDataTime(?\DateTimeInterface $insertDataTime): self
+    public function setInsertDateTime(?\DateTimeInterface $insertDateTime): self
     {
-        $this->insertDataTime = $insertDataTime;
+        $this->insertDateTime = $insertDateTime;
 
         return $this;
     }
