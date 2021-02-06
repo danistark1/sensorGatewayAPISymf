@@ -27,8 +27,6 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 - TIMEZONE="Default is America/Toronto"
 - FIRST_REPORT_TIME="Default 07:00:00" (Sensor readings report first send time)
 - SECOND_REPORT_TIME="Default 20:00:00"(Sensor readings report second send time)
-- SENSORS_RECORDS_INTERVAL=1 (Everytime a new record is added to the db, readings older than the defined interval will be deleted)
-- READINGS_REPORT_INTERVAL=2 (Everytime a new record is added to the db, daily report readings older than the defined interval will be deleted)
 - READING_REPORT_ENABLED=1 To enable/disable reading report.
 
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
@@ -41,19 +39,40 @@ Readings from all configured sensors is sent in an email, twice a day (by defaul
 
 **Sensor names/IDs**
 
-Sensors should be configured using the format SENSOR_SENSORNAME = SENSORID
+Sensors should be configured using the format SENSOR_CONFIG_SENSORNAME = SENSORID
 
-ex. SENSOR_ABC = 123 (sensor name ABC, ID 123)
+ex. SENSOR_CONFIG_ABC = 123 (sensor name ABC, ID 123)
 Sensors names/IDs are then constructed as an array to be used in the application in
 https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L276
 
 My ex.
 
-- SENSOR_BEDROOM=6126
-- SENSOR_BASEMENT=3026
-- SENSOR_GARAGE=8166
-- SENSOR_LIVING_ROOM=15043
-- SENSOR_OUTSIDE=12154
+- SENSOR_CONFIG_BEDROOM=6126
+- SENSOR_CONFIG_BASEMENT=3026
+- SENSOR_CONFIG_GARAGE=8166
+- SENSOR_CONFIG_LIVING_ROOM=15043
+- SENSOR_CONFIG_OUTSIDE=12154
+
+# Notifications configs
+
+Every configured sensor can have an upper, lower threshold. Config should start with 
+- SENSOR_SENORNAME_LOWER_TEMPERATURE=
+- SENSOR_SENORNAME_LOWER_HUMIDITY=
+- SENSOR_SENORNAME_UPPER_TEMPERATURE=
+- SENSOR_SENORNAME_UPPER_HUMIDITY=
+
+If lower or upper threshold is reached, an email is sent twice a day based on the configuration
+
+- FIRST_NOTIFICATION_TIME="06:00:00"
+- SECOND_NOTIFICATION_TIME="12:00:00"
+
+# Pruning
+
+Everytime a new record is added, report, logging & sensor readings data will be pruned based on the below configured intervals.
+
+- SENSORS_RECORDS_INTERVAL=1
+- READINGS_REPORT_INTERVAL=2
+- LOGGER_DELETE_INTERVAL=1
 
 # Usage / REST API Calls
 
