@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\SensorEntity;
 use App\Entity\WeatherLoggerEntity;
 use App\Entity\WeatherReportEntity;
+use App\WeatherConfiguration;
 use App\WeatherStationLogger;
 use App\Repository\SensorRepository;
 use DateInterval;
@@ -66,17 +67,24 @@ class SensorController extends AbstractController {
     private $logger;
 
     /**
+     * @var WeatherConfiguration
+     */
+    private $config;
+
+    /**
      * SensorController constructor.
      *
      * @param SensorRepository|null $sensorRepository
      * @param WeatherStationLogger $logger
+     * @param WeatherConfiguration $config
      */
-    public function __construct(SensorRepository $sensorRepository, WeatherStationLogger $logger) {
+    public function __construct(SensorRepository $sensorRepository, WeatherStationLogger $logger, WeatherConfiguration $config) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
         $this->request  = new Request();
         $this->logger = $logger;
         $this->sensorRepository = $sensorRepository;
+        $this->config = $config;
     }
 
     /**

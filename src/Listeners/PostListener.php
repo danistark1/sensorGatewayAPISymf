@@ -127,13 +127,13 @@ class PostListener {
             // Last Sent Notifications Report
             $lastSentNotificationReport = $this->getLastSentReport(self::REPORT_NOTIFICATIONS);
             // Check if notification report needs to be sent.
-            $shouldSendNotificationReport = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
+            $notificationsCounter = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
 
-            if ($shouldSendNotificationReport && $notificationsReportEnabled && !empty($latestNotificationsData)) {
+            if ($notificationsCounter && $notificationsCounter !==0 && $notificationsReportEnabled && !empty($latestNotificationsData)) {
                 try {
                     $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
                     if ($success === true) {
-                        $this->updateWeatherReport(self::REPORT_NOTIFICATIONS);
+                        $this->updateWeatherReport(self::REPORT_NOTIFICATIONS, $notificationsCounter);
                     }
 
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
@@ -145,12 +145,12 @@ class PostListener {
             $lastSentDailyReport = $this->getLastSentReport(self::REPORT_DAILY);
 
             // Check if daily report needs to be sent.
-            $shouldSendReport = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
-            if ($shouldSendReport && $reportEnabled && !empty($latestSensorData)) {
+            $reportCounter = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
+            if ($reportCounter && $reportCounter !==0 && $reportEnabled && !empty($latestSensorData)) {
                 try {
                     $success = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
                     if ($success) {
-                        $this->updateWeatherReport(self::REPORT_DAILY);
+                        $this->updateWeatherReport(self::REPORT_DAILY, $reportCounter);
                     }
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
@@ -168,29 +168,35 @@ class PostListener {
      * @return bool A report needs to be sent.
      * @throws \Exception
      */
-    private function shouldSendReport($lastSentDailyReport, string $reportType = ''): bool {
-        $shouldSendReport = false;
+    private function shouldSendReport(array $lastSentDailyReport, string $reportType = '') {
+        $counterUpdate = 0;
         $firstReport = $reportType === 'notification' ? ($_ENV["FIRST_NOTIFICATION_TIME"] ?? self::FIRST_NOTIFICATION_TIME) : ($_ENV["FIRST_REPORT_TIME"] ?? self::FIRST_REPORT_TIME);
         $secondReport = $reportType === 'notification' ? ($_ENV["SECOND_NOTIFICATION_TIME"] ?? self::SECOND_NOTIFICATION_TIME) : ($_ENV["SECOND_REPORT_TIME"] ?? self::SECOND_REPORT_TIME);
 
         $currentTime = StationDateTime::dateNow('', true, 'H:i:s');
-        $timerOk = $currentTime >= $firstReport || $currentTime >= $secondReport;
-        $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : null;
+        /** @var WeatherReportEntity $lastSentDailyReport */
+        $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : 0;
 
         if (!empty($lastSentDailyReport)) {
-            // check if first or second report
+            // First & Second report already sent, get out.
             if ($lastReportLastCounter === 2) {
-                return $shouldSendReport = false;
-            } elseif ($lastReportLastCounter === 1 && $timerOk) {
-                $shouldSendReport = true;
+                return false;
+                // First report already sent, & counter = 1, send second report.
+            } elseif ($lastReportLastCounter === 1 && $currentTime > $secondReport) {
+                return 2;
             }
         } else {
-            // empty shoud send
-            if ($timerOk) {
-                $shouldSendReport = true;
+            // empty should send
+            // first Report of the day
+            if ($currentTime > $firstReport && $currentTime < $secondReport && $lastReportLastCounter === 0) {
+                return 1;
+            }
+            // When table is empty and first report time has passed, skip first report and set counter to 2.
+            if ($currentTime > $secondReport && $lastReportLastCounter === 0) {
+               return 2;
             }
         }
-        return $shouldSendReport;
+        return $counterUpdate;
     }
 
     /**
@@ -349,13 +355,13 @@ class PostListener {
      * @param $reportType
      * @throws \Exception
      */
-    private function updateWeatherReport($reportType) {
+    private function updateWeatherReport($reportType, $notificationsCounter) {
         $lastSentReport = $this->getLastSentReport($reportType);
         // Update Email Report table after email is sent.
-        $counter = isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1;
+        //$counter = isset($lastSentReport[0]) ? ($lastSentReport[0]->getLastSentCounter() + 1) : 1;
         try {
             $this->weatherReportRepository->save(
-                ['counter' => $counter,
+                ['counter' => $notificationsCounter,
                     'emailBody' =>$reportType]
             );
         } catch (OptimisticLockException | ORMException $e) {
