@@ -3,8 +3,8 @@
 $configuration = [];
 
 // Weather readings config.
-$configuration['weatherReport']['fromEmail'] = 'vantesla1@gmail.com';
-$configuration['weatherReport']['toEmail'] = 'danistark.ca@gmail.com';
+$configuration['weatherReport']['fromEmail'] = '';
+$configuration['weatherReport']['toEmail'] = '';
 $configuration['weatherReport']['emailTitleDailyReport'] = 'Weather Station Report';
 $configuration['weatherReport']['emailTitleNotifications'] = 'Weather Station notifications';
 $configuration['weatherReport']['firstReportTime'] = '07:00:00';
