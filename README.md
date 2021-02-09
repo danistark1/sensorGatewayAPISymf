@@ -44,6 +44,8 @@ Every configured sensor can have an upper, lower threshold. Config should start 
 
 - EMAIL_TITLE_NOTIFICATIONS="Weather Station Thresholds"
 
+![Notification Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/notificationReport.png)
+
 If lower or upper threshold is reached, an email is sent twice a day based on the configuration
 
 - FIRST_NOTIFICATION_TIME="06:00:00"
