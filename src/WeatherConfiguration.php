@@ -17,7 +17,8 @@ class WeatherConfiguration {
      * WeatherConfiguration constructor.
      */
     public function __construct() {
-        $this->config = include ('../config.php');
+
+        $this->config = include('../config.php');;
     }
 
     /**
@@ -64,6 +65,7 @@ class WeatherConfiguration {
      * Load all configuration.
      */
     public function getConfigs(): array {
+        return $this->config;
     }
 
     /**

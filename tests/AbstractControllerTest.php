@@ -34,6 +34,9 @@ class AbstractControllerTest extends WebTestCase
         if (self::$client === null) {
             self::$client = static::createClient();
         }
+        // Disable postListener.
+        $_ENV["READING_REPORT_ENABLED"] = 0;
+        $_ENV["NOTIFICATIONS_REPORT_ENABLED"] = 0;
 
         // Configure variables
         $this->manager = self::$kernel->getContainer()->get('doctrine.orm.entity_manager');

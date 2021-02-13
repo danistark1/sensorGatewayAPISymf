@@ -81,10 +81,13 @@ class SensorController extends AbstractController {
     public function __construct(SensorRepository $sensorRepository, WeatherStationLogger $logger, WeatherConfiguration $config) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
+
         $this->request  = new Request();
         $this->logger = $logger;
         $this->sensorRepository = $sensorRepository;
         $this->config = $config;
+        $this->response->headers->set('weatherStation-version', $this->config->getConfigKey('application.version'));
+
     }
 
     /**
@@ -130,13 +133,13 @@ class SensorController extends AbstractController {
      * @return Response
      * @Route("/weatherstation/api/id/ordered/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id_ordered")
      */
-    public function getByIDOrdered(Request $request, int $id, WeatherStationLogger $logger): Response {
+    public function getByIDOrdered(Request $request, int $id): Response {
         $operation = $request->get('operation') ?? null;
         $field = $request->get('field') ?? null;
         $value = $request->get('value') ?? null;
         $isOrderValid = !empty($operation) && !empty($field) && !empty($value);
         if ($isOrderValid) {
-            $validSensorConfig = empty(self::constructSensorData()) ? false : true;
+            $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
             if (!$validSensorConfig) {
                 $this->updateResponse(
                     self::VALIDATION_BAD_CONFIG,
@@ -187,7 +190,9 @@ class SensorController extends AbstractController {
      * @return Response
      */
     public function getByID(int $id): Response {
-        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
+        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
+       // $result = $this->config->getConfigKey('sensor.bedroom.upper.temperature');
+       // dump($result);
         if (!$validSensorConfig) {
             $this->updateResponse(
                 self::VALIDATION_BAD_CONFIG,
@@ -231,7 +236,7 @@ class SensorController extends AbstractController {
      * @return Response
      */
     public function getByName(string $name): Response {
-        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
+        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
         if (!$validSensorConfig) {
             $this->updateResponse(
                 self::VALIDATION_BAD_CONFIG,
@@ -293,7 +298,7 @@ class SensorController extends AbstractController {
      * @throws Exception
      */
     public function post(Request $request, int $interval = 1): Response {
-        $validSensorConfig = empty(self::constructSensorData()) ? false : true;
+        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
         if (!$validSensorConfig) {
             $this->updateResponse(
                 self::VALIDATION_BAD_CONFIG,
@@ -329,19 +334,19 @@ class SensorController extends AbstractController {
                     $paramsSensorData = [
                         'tableName' => SensorEntity::class,
                         'dateTimeField' => 'insert_date_time',
-                        'interval' => $_ENV["SENSORS_RECORDS_INTERVAL"] ?? $interval,
+                        'interval' => $this->config->getConfigKey('pruning.records.interval') ?? $interval,
 
                         ];
                     $paramsReportData = [
                         'tableName' => WeatherReportEntity::class,
                         'dateTimeField' => 'lastSentDate',
-                        'interval' => $_ENV["READINGS_REPORT_INTERVAL"] ?? 2,
+                        'interval' => $this->config->getConfigKey('pruning.report.interval') ?? 2,
 
                     ];
                     $paramsLoggerData = [
                         'tableName' => WeatherLoggerEntity::class,
                         'dateTimeField' => 'insertDateTime',
-                        'interval' => $_ENV["LOGGER_DELETE_INTERVAL"] ?? 1,
+                        'interval' => $this->config->getConfigKey('pruning.logs.interval') ?? 1,
 
                     ];
                     $this->sensorRepository->delete($paramsLoggerData);
@@ -398,7 +403,7 @@ class SensorController extends AbstractController {
      */
     private function validateSensorName(string $station, string $sender = '') {
         $valid = true;
-        if (!isset(self::constructSensorData()[$station])) {
+        if (!isset($this->config->getConfigs()['sensor']['config'][$station])) {
             $valid = false;
             $this->response->setContent(self::VALIDATION_STATION_NAME);
             $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
@@ -416,7 +421,7 @@ class SensorController extends AbstractController {
      */
     private function validateStationID(int $stationID, string $sender = ''): bool {
         $valid = true;
-        $sensorData = array_flip(self::constructSensorData());
+        $sensorData = array_flip($this->config->getConfigs()['sensor']['config']);
         if (!isset($sensorData[$stationID])) {
             $valid = false;
             $this->response->setContent(self::VALIDATION_STATION_ID);
@@ -424,39 +429,5 @@ class SensorController extends AbstractController {
             $this->logger->log(self::VALIDATION_STATION_ID, ['id' => $stationID, 'sender' => $sender], Logger::ALERT);
         }
         return $valid;
-    }
-
-    /**
-     * Construct Sensor IDs/Names from the env. config
-     *
-     * @return array
-     */
-    public static function constructSensorData(): array {
-        $sensorData = [];
-        $lookupValue = 'SENSOR_CONFIG_';
-        $envArray = $_ENV;
-        foreach($envArray as $key => $value) {
-            $sensorConfig = str_contains($key, $lookupValue);
-            if ($sensorConfig) {
-                $sensorData += [strtolower(substr($key,14, strlen($key)-7)) => $value];
-            }
-        }
-        return $sensorData;
-    }
-
-    /**
-     * Construct Upper/Lower Humidity & Temperature configured values from the env. config
-     *
-     * @return array
-     */
-    public static function constructNotificationsData(): array {
-        $notificationsData = [];
-        $envArray = $_ENV;
-        foreach($envArray as $key => $value) {
-            if (preg_match('(UPPER_TEMPERATURE|LOWER_TEMPERATURE|UPPER_HUMIDITY|LOWER_HUMIDITY)', $key) === 1) {
-                $notificationsData += [strtolower(substr($key,0, strlen($key))) => $value];
-            }
-        }
-        return $notificationsData;
     }
 }

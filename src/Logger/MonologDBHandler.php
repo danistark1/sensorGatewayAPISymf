@@ -2,6 +2,7 @@
 
 namespace App\Logger;
 use App\Entity\WeatherLoggerEntity;
+use App\WeatherConfiguration;
 use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
@@ -13,8 +14,14 @@ class MonologDBHandler extends AbstractProcessingHandler {
      */
     protected $em;
 
-    public function __construct(EntityManagerInterface $em, $level = Logger::API, $bubble = true) {
+    /**
+     * @var WeatherConfiguration
+     */
+    protected $config;
+
+    public function __construct(EntityManagerInterface $em, WeatherConfiguration $config, $level = Logger::API, $bubble = true) {
         $this->em = $em;
+        $this->config = $config;
         parent::__construct($level, $bubble);
     }
 
@@ -25,7 +32,8 @@ class MonologDBHandler extends AbstractProcessingHandler {
      */
     public function write(array $record): void {
         // Check if debugging is enabled.
-        if (isset($_ENV['DEBUG']) && $_ENV['DEBUG'] == 1) {
+        $debug = $this->config->getConfigKey('application.debug');
+        if (!empty($debug) && $debug == 1) {
             //if( 'doctrine' == $record['channel'] ) {
             // TODO Log level should be configurable
 //            if ((int)$record['level'] === Logger::INFO || (int)$record['level'] === Logger::DEBUG) {

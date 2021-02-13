@@ -8,9 +8,9 @@ $configuration['weatherReport']['toEmail'] = '';
 $configuration['weatherReport']['emailTitleDailyReport'] = 'Weather Station Report';
 $configuration['weatherReport']['emailTitleNotifications'] = 'Weather Station notifications';
 $configuration['weatherReport']['firstReportTime'] = '07:00:00';
-$configuration['weatherReport']['secondReportTime'] = '21:00:00';
+$configuration['weatherReport']['secondReportTime'] = '18:00:00';
 $configuration['weatherReport']['firstNotificationTime'] = '06:00:00';
-$configuration['weatherReport']['secondNotificationTime'] = '20:00:00';
+$configuration['weatherReport']['secondNotificationTime'] = '17:00:00';
 $configuration['weatherReport']['thirdNotificationTime'] = '18:00:00';
 $configuration['weatherReport']['readingReportEnabled'] = true;
 $configuration['weatherReport']['notificationsReportEnabled'] = true;
@@ -46,7 +46,7 @@ $configuration['sensor']['garage']['upper']['humidity'] = 60;
 $configuration['sensor']['garage']['lower']['humidity'] = 30;
 
 // Pruning config.
-$configuration['pruning']['report']['interval'] = 2;
+$configuration['pruning']['report']['interval'] = 1;
 $configuration['pruning']['records']['interval'] = 1;
 $configuration['pruning']['logs']['interval'] = 1;
 
@@ -61,5 +61,6 @@ $configuration['sensor']['config']['garage'] = 12154;
 // Application config.
 $configuration['application']['timezone'] = 'America/Toronto';
 $configuration['application']['debug'] = true;
+$configuration['application']['version'] = 1.0;
 
 return $configuration;
