@@ -191,8 +191,6 @@ class SensorController extends AbstractController {
      */
     public function getByID(int $id): Response {
         $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
-       // $result = $this->config->getConfigKey('sensor.bedroom.upper.temperature');
-       // dump($result);
         if (!$validSensorConfig) {
             $this->updateResponse(
                 self::VALIDATION_BAD_CONFIG,
