@@ -4,6 +4,7 @@
  */
 namespace App\Utils;
 
+use App\WeatherConfiguration;
 use DateTimeZone;
 
 /**
@@ -31,7 +32,9 @@ class StationDateTime {
         if ($duration !== '') {
             $period = new \DateInterval($duration);
         }
-        $timeZone = new DateTimeZone($_ENV["TIMEZONE"] ?? $timeZone);
+        $weatherConfiguration = new WeatherConfiguration();
+        $timezoneConfig = $weatherConfiguration->getConfigKey('application.timezone');
+        $timeZone = new DateTimeZone($timezoneConfig ?? $timeZone);
         $currentDateTime = new \DateTime('now', $timeZone);
         if (isset($period) && $period instanceof \DateInterval) {
             $currentDateTime->sub($period);

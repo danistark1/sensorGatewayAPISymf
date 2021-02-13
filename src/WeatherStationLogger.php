@@ -20,8 +20,8 @@ class WeatherStationLogger extends MonologDBHandler {
      * @param int $level
      * @param bool $bubble
      */
-    public function __construct(EntityManagerInterface $em, $level = Logger::API, $bubble = true) {
-        parent::__construct($em, $level, $bubble);
+    public function __construct(EntityManagerInterface $em, WeatherConfiguration $config, $level = Logger::API, $bubble = true) {
+        parent::__construct($em,$config, $level, $bubble);
     }
 
     /**
