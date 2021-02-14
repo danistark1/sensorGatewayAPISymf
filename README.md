@@ -61,12 +61,6 @@ $configuration['weatherReport']['firstNotificationTime'] = '06:00:00';
 $configuration['weatherReport']['secondNotificationTime'] = '17:00:00';
 ```
 
-**Debugging**
-
-```
-$configuration['application']['debug'] = true;
-```
-
 **Sensor names/IDs**
 
 Sensors should be configured using the format $configuration['sensor']['config']['sensorname'] = sensorid;
@@ -83,7 +77,13 @@ $configuration['sensor']['config']['living_room'] = 15043;
 $configuration['sensor']['config']['garage'] = 12154;
 ```
 
-**Pruning**
+# Debugging
+
+```
+$configuration['application']['debug'] = true;
+```
+
+# Pruning
 
 Everytime a new record is added, report, logging & sensor readings data will be pruned based on the below configured intervals.
 
@@ -142,7 +142,7 @@ https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660
 
 Deletes all weather data older than interval (default is 1 day).
 
-### UnitTests
+### UnitTests(needs updating)
 
 | Test  | Tests | Result |
 | ------------- | ------------- |------------- |
