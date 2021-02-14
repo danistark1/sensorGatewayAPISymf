@@ -20,64 +20,85 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 
  **Configuration (For sensor readings report)**
 
-- MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
-- FROM_EMAIL=
-- TO_EMAIL=
-- EMAIL_TITLE_DAILY_REPORT="Weather Station Report"
-- TIMEZONE="Default is America/Toronto"
-- FIRST_REPORT_TIME="Default 07:00:00" (Sensor readings report first send time)
-- SECOND_REPORT_TIME="Default 20:00:00"(Sensor readings report second send time)
-- READING_REPORT_ENABLED=1 To enable/disable reading report.
+```
+(env file)
+MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
+(config file)
+$configuration['weatherReport']['fromEmail'] = '';
+$configuration['weatherReport']['toEmail'] = '';
+$configuration['weatherReport']['emailTitleDailyReport'] = 'Weather Station Report';
+$configuration['weatherReport']['emailTitleNotifications'] = 'Weather Station notifications';
+$configuration['weatherReport']['firstReportTime'] = '07:00:00';
+$configuration['weatherReport']['secondReportTime'] = '18:00:00';
+$configuration['weatherReport']['firstNotificationTime'] = '06:00:00';
+$configuration['weatherReport']['secondNotificationTime'] = '17:00:00';
+$configuration['weatherReport']['thirdNotificationTime'] = '18:00:00';
+$configuration['weatherReport']['readingReportEnabled'] = false;
+$configuration['weatherReport']['notificationsReportEnabled'] = false;
+```
 
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
 
-Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using FIRST_REPORT_TIME & SECOND_REPORT_TIME).
+Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using firstNotificationTime & secondReportTime).
 
  **Configuration (For sensor notifications report)**
 
 Every configured sensor can have an upper, lower threshold. Config should start with 
 
-- SENSOR_SENSORNAME_LOWER_TEMPERATURE=
-- SENSOR_SENSORNAME_LOWER_HUMIDITY=
-- SENSOR_SENSORNAME_UPPER_TEMPERATURE=
-- SENSOR_SENSORNAME_UPPER_HUMIDITY=
-
-- EMAIL_TITLE_NOTIFICATIONS="Weather Station Thresholds"
+```
+$configuration['sensor']['sensorname']['upper']['temperature'] = 26;
+$configuration['sensor']['sensorname']['lower']['temperature'] = 8;
+$configuration['sensor']['sensorname']['upper']['humidity'] = 60;
+$configuration['sensor']['sensorname']['lower']['humidity'] = 30;
+```
 
 ![Notification Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/notificationReport.png)
 
 If lower or upper temp/humidity threshold is reached, an email is sent twice a day based on the configuration
 
-- FIRST_NOTIFICATION_TIME="06:00:00"
-- SECOND_NOTIFICATION_TIME="12:00:00"
+```
+$configuration['weatherReport']['firstNotificationTime'] = '06:00:00';
+$configuration['weatherReport']['secondNotificationTime'] = '17:00:00';
+```
 
 **Debugging**
 
-- DEBUG=1 To enable Monlog debugging.
+```
+$configuration['application']['debug'] = true;
+```
 
 **Sensor names/IDs**
 
-Sensors should be configured using the format SENSOR_CONFIG_SENSORNAME = SENSORID
+Sensors should be configured using the format $configuration['sensor']['config']['sensorname'] = sensorid;
 
-ex. SENSOR_CONFIG_ABC = 123 (sensor name ABC, ID 123)
-Sensors names/IDs are then constructed as an array to be used in the application in
-https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L276
+ex. $configuration['sensor']['config']['garage'] = 12154; (sensor name garage, ID 12154)
 
 My ex.
 
-- SENSOR_CONFIG_BEDROOM=6126
-- SENSOR_CONFIG_BASEMENT=3026
-- SENSOR_CONFIG_GARAGE=8166
-- SENSOR_CONFIG_LIVING_ROOM=15043
-- SENSOR_CONFIG_OUTSIDE=12154
+```
+$configuration['sensor']['config']['bedroom'] = 6126;
+$configuration['sensor']['config']['basement'] = 3026;
+$configuration['sensor']['config']['outside'] = 8166;
+$configuration['sensor']['config']['living_room'] = 15043;
+$configuration['sensor']['config']['garage'] = 12154;
+```
 
 **Pruning**
 
 Everytime a new record is added, report, logging & sensor readings data will be pruned based on the below configured intervals.
 
-- SENSORS_RECORDS_INTERVAL=1
-- READINGS_REPORT_INTERVAL=2
-- LOGGER_DELETE_INTERVAL=1
+```
+$configuration['pruning']['report']['interval'] = 1;
+$configuration['pruning']['records']['interval'] = 1;
+$configuration['pruning']['logs']['interval'] = 1;
+```
+
+# Caching
+
+By default, all get request respones are cached unless response data has changed since last caching.
+Check
+
+https://github.com/danistark1/weatherStationApiSymfony/blob/d3538fe1ccda25391cd9e8a91b2593ba8fa55d01/src/Controller/SensorController.php#L212
 
 # Usage / REST API Calls
 
