@@ -72,6 +72,7 @@ class SensorController extends AbstractController {
      */
     private $config;
 
+    /** @var float|string Capture response execution time */
     private $time_start;
 
     /**
