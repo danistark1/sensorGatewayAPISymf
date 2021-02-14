@@ -14,6 +14,7 @@ use DateInterval;
 use DateTime;
 use Exception;
 use Monolog\Logger;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -71,6 +72,8 @@ class SensorController extends AbstractController {
      */
     private $config;
 
+    private $time_start;
+
     /**
      * SensorController constructor.
      *
@@ -87,6 +90,7 @@ class SensorController extends AbstractController {
         $this->sensorRepository = $sensorRepository;
         $this->config = $config;
         $this->response->headers->set('weatherStation-version', $this->config->getConfigKey('application.version'));
+        $this->time_start = microtime(true);
 
     }
 
@@ -97,10 +101,14 @@ class SensorController extends AbstractController {
      *         sensorName => (get by configured sensor names)
      *
      * @param Request $request
+     * @Cache(maxage=5, public=true)
      * @return Response
      * @Route("/weatherstation/api/ordered", methods={"GET"}, name="get_by_ordered")
      */
     public function getByOrdered(Request $request): Response {
+        if ($this->response->isNotModified($request)) {
+            return $this->response;
+        }
         $order = $request->get('order') ?? 'desc';
         $orderField = $request->get('orderField');
         $sensorName = $request->get('sensorName');
@@ -118,6 +126,8 @@ class SensorController extends AbstractController {
             $response = $this->sensorRepository->findOrdered($sensorName, $orderField = 'insert_date_time', $order);
             $this->validateResponse($response);
         }
+        $this->updateResponseHeader();
+        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
     }
 
@@ -130,10 +140,14 @@ class SensorController extends AbstractController {
      *
      * @param Request $request
      * @param int $id
+     * @Cache(maxage=5, public=true)
      * @return Response
      * @Route("/weatherstation/api/id/ordered/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id_ordered")
      */
     public function getByIDOrdered(Request $request, int $id): Response {
+        if ($this->response->isNotModified($request)) {
+            return $this->response;
+        }
         $operation = $request->get('operation') ?? null;
         $field = $request->get('field') ?? null;
         $value = $request->get('value') ?? null;
@@ -179,6 +193,8 @@ class SensorController extends AbstractController {
                 Logger::ALERT
             );
         }
+        $this->updateResponseHeader();
+        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
     }
 
@@ -186,10 +202,15 @@ class SensorController extends AbstractController {
      * Get all weatherData by stationID
      *
      * @param int $id The room id.
-     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
+     * @param Request $request
      * @return Response
+     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
+     * @Cache(maxage=5, public=true)
      */
-    public function getByID(int $id): Response {
+    public function getByID(int $id, Request $request): Response {
+       if ($this->response->isNotModified($request)) {
+            return $this->response;
+       }
         $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
         if (!$validSensorConfig) {
             $this->updateResponse(
@@ -207,9 +228,19 @@ class SensorController extends AbstractController {
                 $response = $this->sensorRepository->findByQuery(['station_id' => $id]);
                 $this->validateResponse($response, $id);
             }
-
         }
+        $this->updateResponseHeader();
+        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
+    }
+
+    /**
+     * Adds execution time to the response.
+     */
+    private function updateResponseHeader() {
+        $time_end = microtime(true);
+        $execution_time = ($time_end - $this->time_start);
+        $this->response->headers->set('weatherStation-responseTime', $execution_time);
     }
 
     /**
@@ -230,10 +261,15 @@ class SensorController extends AbstractController {
      * Get weatherData by room name.
      *
      * @param string $name Room name
-     * @Route("weatherstation/api/name/{name}", methods={"GET"}, requirements={"name"="\w+"}, name="get_by_name")
+     * @param Request $request
      * @return Response
+     * @Cache(maxage=5, public=true)
+     * @Route("weatherstation/api/name/{name}", methods={"GET"}, requirements={"name"="\w+"}, name="get_by_name")
      */
-    public function getByName(string $name): Response {
+    public function getByName(string $name, Request $request): Response {
+        if ($this->response->isNotModified($request)) {
+            return $this->response;
+        }
         $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
         if (!$validSensorConfig) {
             $this->updateResponse(
@@ -253,6 +289,8 @@ class SensorController extends AbstractController {
                 $this->validateResponse($response, $name);
             }
         }
+        $this->updateResponseHeader();
+        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
     }
 
@@ -280,9 +318,10 @@ class SensorController extends AbstractController {
      * @throws \Doctrine\ORM\OptimisticLockException
      */
     public function delete(array $params): Response {
-        //TODO Validate delete parsms.
+        //TODO Validate delete params.
         $this->sensorRepository->delete($params);
         $this->response->setStatusCode(self::STATUS_OK);
+        $this->updateResponseHeader();
         return $this->response;
     }
 
@@ -357,6 +396,7 @@ class SensorController extends AbstractController {
 
             }
         }
+        $this->updateResponseHeader();
         return $this->response;
     }
 
