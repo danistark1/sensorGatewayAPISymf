@@ -200,6 +200,19 @@ class SensorController extends AbstractController {
     }
 
     /**
+     * Set a config.
+     * @param Request $request
+     * @return Response
+     * @Route("/weatherstation/api/setconfig", methods={"POST"}, name="set_config")
+     */
+    public function setConfig(Request $request) {
+        $config = $request->get('config');
+        $configValue = $request->get('configValue');
+        $this->config->setConfigKey([$config => $configValue]);
+    return $this->response;
+    }
+
+    /**
      * Get all weatherData by stationID
      *
      * @param int $id The room id.
@@ -312,7 +325,7 @@ class SensorController extends AbstractController {
      * Delete weather records based on the set interval.
      * Default is 1 day.
      *
-     * @Route("weatherstation/api/delete/{parsms}", methods={"DELETE"}, name="task_delete")
+     * @Route("weatherstation/api/delete/{params}", methods={"DELETE"}, name="task_delete")
      * @param array $params
      * @return Response
      * @throws \Doctrine\ORM\ORMException
