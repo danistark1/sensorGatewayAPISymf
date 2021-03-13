@@ -133,8 +133,7 @@ class PostListener {
             $lastSentNotificationReport = $this->getLastSentReport(self::REPORT_NOTIFICATIONS);
             // Check if notification report needs to be sent.
             $notificationsCounter = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
-
-            if ($notificationsCounter && $notificationsCounter !==0 && $notificationsReportEnabled && !empty($latestNotificationsData)) {
+            if ($notificationsCounter && $notificationsCounter !== 0 && $notificationsReportEnabled && !empty($latestNotificationsData)) {
                 try {
                     $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
                     if ($success === true) {
@@ -232,9 +231,21 @@ class PostListener {
                 ];
             }
         }
-        $weatherData = ['weatherData' => $prepareData];
+        $tempSorted = ArraysUtils::arraySortByColumn($prepareData, 'temperature');
+        $humiditySorted = ArraysUtils::arraySortByColumn($prepareData, 'humidity');
+        $sortedArray = [];
+        foreach($tempSorted as $key => $value) {
+            $sortedArray[$key] = [
+                'temperature' => $value,
+                'humidity' => $humiditySorted[$key]
+            ];
+        }
+        $weatherData = ['weatherData' => $sortedArray];
         return $weatherData;
     }
+
+
+
 
     /**
      * Get last sent report/notification.
@@ -262,7 +273,11 @@ class PostListener {
      * @return array
      */
     private function prepareNotifications(array $latestSensorData): array {
-        $massagedData = $latestSensorData['weatherData'];
+        $massagedData = $latestSensorData['weatherData'] ?? [];
+        if (empty($massagedData)) {
+            $this->logger->log("weatherData is not set",["function"=> __FUNCTION__], Logger::CRITICAL);
+            return $massagedData;
+        }
         $thresholdTempUpper = $thresholdTempLower = $thresholdHumidUpper = $thresholdHumidLower = false;
         // Loop over configured Thresholds, send email.
         $notificationsEmailData = [];
@@ -319,7 +334,6 @@ class PostListener {
      */
     private function sendReport(array $sensorData, string $twigEmail, string $emailTitle = 'Report'): bool {
         $success = true;
-        $valid = false;
         $fromEmail = $this->config->getConfigKey('weatherReport.fromEmail');
         $toEmail =  $this->config->getConfigKey('weatherReport.toEmail');
         $emailsArray = [
@@ -329,10 +343,10 @@ class PostListener {
         $valid = ArraysUtils::validateEmails(($emailsArray));
         if (!$valid) {
             $this->logger->log('Invalid Emails.', ['sender' => __FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
-
             return !$success;
         }
-        if ($valid && !empty($sensorData)) {
+        //return true;
+        if (!empty($sensorData) && !$this->config->getConfigKey('disableEmails')) {
             $message = (new Email())
                 ->from($fromEmail)
                 ->to($toEmail)
@@ -354,6 +368,8 @@ class PostListener {
                 );
 
             }
+        } else {
+            $success = false;
         }
         return $success;
     }
@@ -361,8 +377,8 @@ class PostListener {
     /**
      * Update weatherReport Table.
      *
-     * @param $reportType
-     * @throws \Exception
+     * @param string $reportType
+     * @param $notificationsCounter
      */
     private function updateWeatherReport(string $reportType, $notificationsCounter) {
         try {

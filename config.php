@@ -13,7 +13,8 @@ $configuration['weatherReport']['firstNotificationTime'] = '06:00:00';
 $configuration['weatherReport']['secondNotificationTime'] = '17:00:00';
 $configuration['weatherReport']['thirdNotificationTime'] = '18:00:00';
 $configuration['weatherReport']['readingReportEnabled'] = true;
-$configuration['weatherReport']['notificationsReportEnabled'] = true;
+$configuration['weatherReport']['notificationsReportEnabled'] = false;
+$configuration['weatherReport']['disableEmails'] = false;
 
 // Bedroom notification thresholds.
 $configuration['sensor']['bedroom']['upper']['temperature'] = 24;

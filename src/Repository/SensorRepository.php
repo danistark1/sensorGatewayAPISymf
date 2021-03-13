@@ -25,7 +25,6 @@ class SensorRepository extends ServiceEntityRepository {
         parent::__construct($registry, SensorEntity::class);
     }
 
-
     /**
      * Find a record.
      *
