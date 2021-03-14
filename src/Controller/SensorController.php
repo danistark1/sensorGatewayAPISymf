@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\SensorEntity;
 use App\Entity\WeatherLoggerEntity;
 use App\Entity\WeatherReportEntity;
+use App\WeatherCacheHandler;
 use App\WeatherConfiguration;
 use App\WeatherStationLogger;
 use App\Repository\SensorRepository;
@@ -15,6 +16,7 @@ use DateTime;
 use Exception;
 use Monolog\Logger;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,8 +33,7 @@ use App\Kernel;
  *
  * @package App\Controller
  */
-class SensorController extends AbstractController {
-
+class SensorController extends AbstractController  {
     // Status Codes
     const STATUS_OK = 200;
     const STATUS_NO_CONTENT = 204;
@@ -75,6 +76,11 @@ class SensorController extends AbstractController {
     /** @var float|string Capture response execution time */
     private $time_start;
 
+    /** @var FilesystemAdapter  */
+    private $cache;
+
+    private $weatherCacheHandler;
+
     /**
      * SensorController constructor.
      *
@@ -82,7 +88,11 @@ class SensorController extends AbstractController {
      * @param WeatherStationLogger $logger
      * @param WeatherConfiguration $config
      */
-    public function __construct(SensorRepository $sensorRepository, WeatherStationLogger $logger, WeatherConfiguration $config) {
+    public function __construct(
+        SensorRepository $sensorRepository,
+        WeatherStationLogger $logger,
+        WeatherConfiguration $config,
+        WeatherCacheHandler $cacheHandler) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
 
@@ -92,7 +102,8 @@ class SensorController extends AbstractController {
         $this->config = $config;
         $this->response->headers->set('weatherStation-version', $this->config->getConfigKey('application.version'));
         $this->time_start = microtime(true);
-
+        $this->cache = new FilesystemAdapter();
+        $this->weatherCacheHandler = $cacheHandler;
     }
 
     /**
@@ -200,32 +211,19 @@ class SensorController extends AbstractController {
     }
 
     /**
-     * Set a config.
-     * @param Request $request
-     * @return Response
-     * @Route("/weatherstation/api/setconfig", methods={"POST"}, name="set_config")
-     */
-    public function setConfig(Request $request) {
-        $config = $request->get('config');
-        $configValue = $request->get('configValue');
-        $this->config->setConfigKey([$config => $configValue]);
-    return $this->response;
-    }
-
-    /**
      * Get all weatherData by stationID
      *
      * @param int $id The room id.
      * @param Request $request
      * @return Response
      * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
-     * @Cache(maxage=5, public=true)
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getByID(int $id, Request $request): Response {
        if ($this->response->isNotModified($request)) {
             return $this->response;
        }
-        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
+        $validSensorConfig = $this->weatherCacheHandler->isConfigSetValue($id);
         if (!$validSensorConfig) {
             $this->updateResponse(
                 self::VALIDATION_BAD_CONFIG,
@@ -244,7 +242,6 @@ class SensorController extends AbstractController {
             }
         }
         $this->updateResponseHeader();
-        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
     }
 
@@ -284,7 +281,7 @@ class SensorController extends AbstractController {
         if ($this->response->isNotModified($request)) {
             return $this->response;
         }
-        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
+        $validSensorConfig = $this->weatherCacheHandler->isConfigSetKey('sensor-config-'.$name);;
         if (!$validSensorConfig) {
             $this->updateResponse(
                 self::VALIDATION_BAD_CONFIG,
@@ -455,7 +452,7 @@ class SensorController extends AbstractController {
      */
     private function validateSensorName(string $station, string $sender = '') {
         $valid = true;
-        if (!isset($this->config->getConfigs()['sensor']['config'][$station])) {
+        if (!$this->weatherCacheHandler->isConfigSetKey('sensor-config-'.$station)) {
             $valid = false;
             $this->response->setContent(self::VALIDATION_STATION_NAME);
             $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
@@ -473,8 +470,8 @@ class SensorController extends AbstractController {
      */
     private function validateStationID(int $stationID, string $sender = ''): bool {
         $valid = true;
-        $sensorData = array_flip($this->config->getConfigs()['sensor']['config']);
-        if (!isset($sensorData[$stationID])) {
+
+        if (!$this->weatherCacheHandler->isConfigSetValue($stationID)) {
             $valid = false;
             $this->response->setContent(self::VALIDATION_STATION_ID);
             $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);

@@ -3,6 +3,7 @@
 namespace App;
 
 use SplFileInfo;
+//include('../config.php');
 
 /**
  * Class WeatherConfiguration
@@ -19,8 +20,7 @@ class WeatherConfiguration {
      * WeatherConfiguration constructor.
      */
     public function __construct() {
-
-        $this->config = include('../config.php');;
+        $this->config = include('../config.php');
     }
 
     /**
@@ -53,31 +53,6 @@ class WeatherConfiguration {
      * @param string $pattern
      */
     public function getConfigPattern(string $pattern) {
-    }
-
-    /**
-     * Set config by key.
-     *
-     * @param array $config
-     */
-    public function setConfigKey(array $config) {
-        $configKey = key($config);
-        $configValue = $config[$configKey];
-        $configValueExist = $this->getConfigKey($configKey);
-        if ($configValueExist) {
-        $this->config[$configKey] = $configValue;
-        }
-
-       $directory = dirname(__FILE__.'/Controller/SensorController.php');
-        $file = file('SensorController.php');
-        dump($file);
-//        $matches = array();
-//        preg_match('/^database\.params\.dbname = (.*)$/', $file, $matches);
-//        $file = str_replace($matches[1], $new_value, $file);
-        //file_put_contents('/weatherStationApiSymfony/config.php', $file);
-
-
-        return;
     }
 
     /**
