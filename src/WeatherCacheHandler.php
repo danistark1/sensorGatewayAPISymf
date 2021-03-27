@@ -31,6 +31,7 @@ class WeatherCacheHandler {
 
 /** @var FilesystemAdapter  */
     private $cache;
+    /** @var ManagerRegistry  */
     private $managerRegistry;
 
     public function __construct(ManagerRegistry $managerRegistry) {

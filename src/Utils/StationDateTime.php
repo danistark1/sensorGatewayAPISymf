@@ -4,7 +4,6 @@
  */
 namespace App\Utils;
 
-use App\WeatherConfiguration;
 use DateTimeZone;
 
 /**
@@ -27,14 +26,16 @@ class StationDateTime {
      * @param string $timeZone
      * @return string
      * @throws \Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public static function dateNow(string $duration = '', bool $formatted = false, $format = 'Y-m-d H:i:s', string $timeZone = 'America/Toronto') {
         if ($duration !== '') {
             $period = new \DateInterval($duration);
         }
-        $weatherConfiguration = new WeatherConfiguration();
-        $timezoneConfig = $weatherConfiguration->getConfigKey('application.timezone');
-        $timeZone = new DateTimeZone($timezoneConfig ?? $timeZone);
+//TODO Fix get config cache
+//        $timezoneConfig = $cacheConfig->getConfigKey('application-timezone');
+        //     $timeZone = new DateTimeZone($timezoneConfig ?? $timeZone);
+        $timeZone = new DateTimeZone($timeZone);
         $currentDateTime = new \DateTime('now', $timeZone);
         if (isset($period) && $period instanceof \DateInterval) {
             $currentDateTime->sub($period);
