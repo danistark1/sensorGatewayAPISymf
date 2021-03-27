@@ -111,6 +111,10 @@ class WeatherCacheHandler {
             }
             return $dbValue;
         });
+        // If config is not found, make sure cache key is also not found.
+        if (empty($value)) {
+            $this->clearCacheKey('cache_'.$value);
+        }
         return !empty($value[0]) ? $value[0]->getConfigKey() : false;
     }
 
@@ -140,6 +144,10 @@ class WeatherCacheHandler {
             }
             return $dbConfigs;
         });
+        // If config is not found, make sure cache key is also not found.
+        if (empty($value)) {
+            $this->clearCacheKey('cache_'.$value);
+        }
         return $value;
     }
 
