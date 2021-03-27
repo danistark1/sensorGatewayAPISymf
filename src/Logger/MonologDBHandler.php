@@ -2,6 +2,7 @@
 
 namespace App\Logger;
 use App\Entity\WeatherLoggerEntity;
+use App\WeatherCacheHandler;
 use App\WeatherConfiguration;
 use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Handler\AbstractProcessingHandler;
@@ -19,9 +20,12 @@ class MonologDBHandler extends AbstractProcessingHandler {
      */
     protected $config;
 
-    public function __construct(EntityManagerInterface $em, WeatherConfiguration $config, $level = Logger::API, $bubble = true) {
+    /** @var WeatherCacheHandler  */
+    protected $configCache;
+
+    public function __construct(EntityManagerInterface $em, WeatherCacheHandler $configCache, $level = Logger::API, $bubble = true) {
         $this->em = $em;
-        $this->config = $config;
+        $this->configCache = $configCache;
         parent::__construct($level, $bubble);
     }
 
@@ -29,10 +33,11 @@ class MonologDBHandler extends AbstractProcessingHandler {
      * Called when writing to our database
      *
      * @param array $record
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function write(array $record): void {
         // Check if debugging is enabled.
-        $debug = $this->config->getConfigKey('application.debug');
+        $debug = $this->configCache->getConfigKey('application-debug');
         if (!empty($debug) && $debug == 1) {
             //if( 'doctrine' == $record['channel'] ) {
             // TODO Log level should be configurable

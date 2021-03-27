@@ -39,11 +39,12 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    public function save(string $key, string $value) {
+    public function save(array $params) {
         $em = $this->getEntityManager();
         $weatherConfigEnt = new WeatherConfigurationEntity();
-        $weatherConfigEnt->setConfigKey($key);
-        $weatherConfigEnt->setConfigValue($value);
+        $weatherConfigEnt->setConfigKey($params['config_key']);
+        $weatherConfigEnt->setConfigValue($params['config_value']);
+        $weatherConfigEnt->setConfigType($params['config_type']);
 
         $dt = StationDateTime::dateNow();
         $weatherConfigEnt->setConfigDate($dt);

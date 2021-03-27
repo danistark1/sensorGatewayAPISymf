@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\WeatherConfigurationRepository;
+use App\WeatherCacheHandler;
 use App\WeatherConfiguration;
 use App\WeatherStationLogger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,6 +32,9 @@ class ConfigurationController extends AbstractController {
 
     private $cache;
 
+    /** @var WeatherCacheHandler  */
+    private $configCache;
+
     /**
      * SensorController constructor.
      *
@@ -38,15 +42,14 @@ class ConfigurationController extends AbstractController {
      * @param WeatherStationLogger $logger
      * @param WeatherConfiguration $config
      */
-    public function __construct(WeatherConfigurationRepository $weatherConfigurationRepository, WeatherStationLogger $logger, WeatherConfiguration $config) {
+    public function __construct(WeatherConfigurationRepository $weatherConfigurationRepository, WeatherStationLogger $logger, WeatherCacheHandler $configCache) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
 
         $this->request  = new Request();
         $this->logger = $logger;
         $this->weatherConfigurationRepository = $weatherConfigurationRepository;
-        $this->config = $config;
-        $this->response->headers->set('weatherStation-version', $this->config->getConfigValue('application.version'));
+        $this->configCache = $configCache;
         $this->time_start = microtime(true);
         $this->cache = new FilesystemAdapter();
     }
@@ -63,7 +66,7 @@ class ConfigurationController extends AbstractController {
     /**
      * Post weatherData.
      *
-     * @Route("/weatherstation/api/config/{key}/{value}",  methods={"POST"}, name="post_config")
+     * @Route("/weatherstation/api/config",  methods={"POST"}, name="post_config")
      * @param string $key
      * @param string $value
      * @param Request $request
@@ -71,8 +74,11 @@ class ConfigurationController extends AbstractController {
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    public function post(string $key, string $value, Request $request): Response {
-        $result = $this->weatherConfigurationRepository->save($key, $value);
+    public function post(Request $request): Response {
+        $parameters = json_decode($request->getContent(), true);
+        // TODO Validation.
+        $this->weatherConfigurationRepository->save($parameters);
+        $this->configCache->clearCache();
         return $this->response;
     }
 
@@ -84,25 +90,18 @@ class ConfigurationController extends AbstractController {
      * @Route("/weatherstation/api/config/{key}", methods={"GET"}, name="get_config")
      */
     public function getConfig(Request $request, $key): Response {
-//        // The callable will only be executed on a cache miss.
-//        $value = $this->cache->get('cache_'.$key, function (ItemInterface $item) use ($key) {
-//            $item->expiresAfter(3600000);
-//            $response = $this->weatherConfigurationRepository->findByQuery(['configKey' => $key]);
-//            $computedValue = $this->json($response)->getContent();
-//            return $computedValue;
-//        });
-        $value = $this->weatherConfigurationRepository->getConfigValue($key);
-        $computedValue = $this->json($value)->getContent();
-        $this->response->setContent($computedValue);
+        $value = $this->configCache->getConfigKey($key);
+        $this->response->setContent($value);
         return $this->response;
     }
 
     /**
+     * Update a config
      *
      *@Route("/weatherstation/api/config/{key}/{value}", methods={"PATCH"}, name="update_config")
      */
-    public function patch($key,$value) {
-        $value = $this->weatherConfigurationRepository->update($key,$value);
+    public function patch($key, $value) {
+        $this->weatherConfigurationRepository->update($key,$value);
         return $this->response;
     }
 }

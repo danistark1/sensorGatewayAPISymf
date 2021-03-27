@@ -28,6 +28,7 @@ class WeatherConfiguration {
      *
      * @param string $config
      * @return bool|string
+     * @deprecated Use WeatherCacheHandler::getConfigKey
      */
     public function getConfigKey(string $config) {
         $result = explode('.', $config);
@@ -35,7 +36,6 @@ class WeatherConfiguration {
         foreach($result as $key => $value) {
             $newArray[$key] = $value;
         }
-
         if (count($newArray) === 4 && isset($this->config[$newArray[0]][$newArray[1]][$newArray[2]][$newArray[3]])) {
            return $this->config[$newArray[0]][$newArray[1]][$newArray[2]][$newArray[3]];
         } elseif (count($newArray) === 3 && isset($this->config[$newArray[0]][$newArray[1]][$newArray[2]])) {
@@ -45,36 +45,5 @@ class WeatherConfiguration {
         } else {
             return false;
         }
-    }
-
-    /**
-     * Get config, given a pattern
-     *
-     * @param string $pattern
-     */
-    public function getConfigPattern(string $pattern) {
-    }
-
-    /**
-     * Load all configuration.
-     */
-    public function getConfigs(): array {
-        return $this->config;
-    }
-
-    /**
-     * Remove config by key.
-     *
-     * @param string $key
-     */
-    public function removeConfigKey(string $key) {
-    }
-
-    /**
-     * Remove config given a pattern.
-     *
-     * @param string $pattern
-     */
-    public function removeConfigPattern(string $pattern) {
     }
 }

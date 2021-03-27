@@ -8,6 +8,7 @@ use App\Entity\SensorEntity;
 use App\Entity\WeatherReportEntity;
 use App\Repository\WeatherReportRepository;
 use App\Utils\ArraysUtils;
+use App\WeatherCacheHandler;
 use App\WeatherConfiguration;
 use App\WeatherStationLogger;
 use Doctrine\ORM\EntityManager;
@@ -83,10 +84,8 @@ class PostListener {
     /** @var WeatherReportRepository  */
     private $weatherReportRepository;
 
-    /**
-     * @var WeatherConfiguration
-     */
-    private $config;
+    /** @var WeatherCacheHandler  */
+    private $configCache;
 
     /**
      * PostListener constructor.
@@ -95,19 +94,19 @@ class PostListener {
      * @param MailerInterface $mailer
      * @param WeatherStationLogger $logger
      * @param WeatherReportRepository $weatherReportRepository
-     * @param WeatherConfiguration $config
+     * @param WeatherCacheHandler $configCacheHandler
      */
     public function __construct(
         Environment $templating,
         MailerInterface $mailer,
         WeatherStationLogger $logger,
         WeatherReportRepository $weatherReportRepository,
-        WeatherConfiguration $config) {
+        WeatherCacheHandler $configCacheHandler) {
         $this->templating = $templating;
         $this->mailer = $mailer;
         $this->logger = $logger;
         $this->weatherReportRepository = $weatherReportRepository;
-        $this->config = $config;
+        $this->configCache = $configCacheHandler;
     }
 
     /**
@@ -115,15 +114,19 @@ class PostListener {
      *
      * @param LifecycleEventArgs $args
      * @throws \Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function postPersist(LifecycleEventArgs $args) {
         $this->entityManager = $args->getObjectManager();
         $postInstance = $args->getEntity();
-        $reportEnabled = $this->config->getConfigKey('weatherReport.readingReportEnabled') ?? false;
+        if (!$postInstance instanceof SensorEntity) {
+            return;
+        }
+        $reportEnabled = $this->configCache->isConfigSetKey('weatherReport-readingReportEnabled');
+        $notificationsReportEnabled = $this->configCache->isConfigSetKey('weatherReport-notificationsReportEnabled');
 
-        $notificationsReportEnabled = $this->config->getConfigKey('weatherReport.notificationsReportEnabled') ?? false;
         // only act on "Sensor" entity
-        if (($postInstance instanceof SensorEntity) && ($reportEnabled || $notificationsReportEnabled)) {
+        if ($reportEnabled || $notificationsReportEnabled) {
             /// Get latest Sensor Readings.
             $latestSensorData = $this->getLatestSensorData();
             // Prepare notifications report
@@ -171,13 +174,14 @@ class PostListener {
      * @param string $reportType Empty for Daily report.
      * @return bool A report needs to be sent.
      * @throws \Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function shouldSendReport(array $lastSentDailyReport, string $reportType = '') {
         $counterUpdate = 0;
-        $firstNotificationTime = $this->config->getConfigKey('weatherReport.firstNotificationTime');
-        $firstReportTime =  $this->config->getConfigKey('weatherReport.firstReportTime');
-        $secondNotificationTime =  $this->config->getConfigKey('weatherReport.secondNotificationTime');
-        $secondReportTime =  $this->config->getConfigKey('weatherReport.secondReportTime');
+        $firstNotificationTime = $this->configCache->getConfigKey('weatherReport-firstNotificationTime');
+        $firstReportTime = $this->configCache->getConfigKey('weatherReport-firstReportTime');
+        $secondNotificationTime = $this->configCache->getConfigKey('weatherReport-secondNotificationTime');
+        $secondReportTime = $this->configCache->getConfigKey('weatherReport-secondReportTime');
         $firstReport = $reportType === 'notification' ? ($firstNotificationTime ?? self::FIRST_NOTIFICATION_TIME) : ($firstReportTime ?? self::FIRST_REPORT_TIME);
         $secondReport = $reportType === 'notification' ? ($secondNotificationTime ?? self::SECOND_NOTIFICATION_TIME) : ($secondReportTime ?? self::SECOND_REPORT_TIME);
 
@@ -214,13 +218,15 @@ class PostListener {
      */
     private function getLatestSensorData(): array {
         // Construct station IDs array.
-        $stationSensorConfigs = $this->config->getConfigs()['sensor']['config'];
+        $stationSensorConfigs = $this->configCache->getSensorConfigs();
+       // return $stationSensorConfigs;
         // ["bedroom" => "6126"
         //  "basement" => "3026"
         //   "garage" => "8166"
         //   "living_room" => "15043"
         //   "outside" => "12154"]
         // Remove any invalid entries before calling temp & humidity methods on an empty array.
+
         $prepareData = $weatherData =  [];
         foreach ($stationSensorConfigs as $sensorName => $stationID) {
             $sensorData = $this->entityManager->getRepository(SensorEntity::class)->findOrdered($sensorName);
@@ -271,6 +277,7 @@ class PostListener {
      *
      * @param array $latestSensorData
      * @return array
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function prepareNotifications(array $latestSensorData): array {
         $massagedData = $latestSensorData['weatherData'] ?? [];
@@ -282,20 +289,20 @@ class PostListener {
         // Loop over configured Thresholds, send email.
         $notificationsEmailData = [];
         foreach($massagedData as $key => $value) {
-            if ($massagedData[$key]['temperature'] >= $this->config->getConfigs()['sensor'][$key]['upper']['temperature']) {
+            if ($massagedData[$key]['temperature'] >= $this->configCache->getConfigKey('sensor-'.$key.'-'.'upper-temperature')) {
                 $thresholdTempUpper = true;
                 $notificationsEmailData[$key]['temperature']['upper'] = 'Upper Temp Threshold Reached ';
                 $notificationsEmailData[$key]['temperature']['value'] = $massagedData[$key]['temperature'];
-            } elseif($massagedData[$key]['temperature'] <= $this->config->getConfigs()['sensor'][$key]['lower']['temperature']) {
+            } elseif($massagedData[$key]['temperature'] <=  $this->configCache->getConfigKey('sensor-'.$key.'-'.'lower-temperature')) {
                 $thresholdTempLower = true;
                 $notificationsEmailData[$key]['temperature']['lower'] = 'Lower Temp Threshold Reached ';
                 $notificationsEmailData[$key]['temperature']['value'] = $massagedData[$key]['temperature'];
             }
-            if ($massagedData[$key]['humidity'] >= $this->config->getConfigs()['sensor'][$key]['upper']['humidity']) {
+            if ($massagedData[$key]['humidity'] >= $this->configCache->getConfigKey('sensor-'.$key.'-'.'upper-humidity')) {
                 $thresholdHumidUpper = true;
                 $notificationsEmailData[$key]['humidity']['upper'] = 'Upper Humidity Threshold Reached ';
                 $notificationsEmailData[$key]['humidity']['value'] =  $massagedData[$key]['humidity'];
-            }elseif($massagedData[$key]['humidity'] <= $this->config->getConfigs()['sensor'][$key]['lower']['humidity']) {
+            }elseif($massagedData[$key]['humidity'] <=  $this->configCache->getConfigKey('sensor-'.$key.'-'.'lower-humidity')) {
                 $thresholdHumidLower = true;
                 $notificationsEmailData[$key]['humidity']['lower'] = 'Lower Humidity Threshold Reached ';
                 $notificationsEmailData[$key]['humidity']['value'] = $massagedData[$key]['humidity'];
@@ -334,8 +341,8 @@ class PostListener {
      */
     private function sendReport(array $sensorData, string $twigEmail, string $emailTitle = 'Report'): bool {
         $success = true;
-        $fromEmail = $this->config->getConfigKey('weatherReport.fromEmail');
-        $toEmail =  $this->config->getConfigKey('weatherReport.toEmail');
+        $fromEmail = $this->configCache->getConfigKey('weatherReport-fromEmail');
+        $toEmail = $this->configCache->getConfigKey('weatherReport-toEmail');
         $emailsArray = [
             'from' =>  $fromEmail,
             'to' => $toEmail
@@ -346,7 +353,7 @@ class PostListener {
             return !$success;
         }
         //return true;
-        if (!empty($sensorData) && !$this->config->getConfigKey('disableEmails')) {
+        if (!empty($sensorData) && !$this->configCache->getConfigKey('weatherReport-disableEmails')) {
             $message = (new Email())
                 ->from($fromEmail)
                 ->to($toEmail)

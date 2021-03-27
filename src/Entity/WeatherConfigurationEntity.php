@@ -33,6 +33,11 @@ class WeatherConfigurationEntity
      */
     private $configDate;
 
+    /**
+     * @ORM\Column(type="string", length=25)
+     */
+    private $config_type;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -70,6 +75,18 @@ class WeatherConfigurationEntity
     public function setConfigDate(\DateTimeInterface $configDate): self
     {
         $this->configDate = $configDate;
+
+        return $this;
+    }
+
+    public function getConfigType(): ?string
+    {
+        return $this->config_type;
+    }
+
+    public function setConfigType(string $config_type): self
+    {
+        $this->config_type = $config_type;
 
         return $this;
     }
