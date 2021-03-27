@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\SensorEntity;
 use App\Entity\WeatherLoggerEntity;
 use App\Entity\WeatherReportEntity;
+use App\WeatherCacheHandler;
 use App\WeatherConfiguration;
 use App\WeatherStationLogger;
 use App\Repository\SensorRepository;
@@ -15,6 +16,7 @@ use DateTime;
 use Exception;
 use Monolog\Logger;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,8 +33,7 @@ use App\Kernel;
  *
  * @package App\Controller
  */
-class SensorController extends AbstractController {
-
+class SensorController extends AbstractController  {
     // Status Codes
     const STATUS_OK = 200;
     const STATUS_NO_CONTENT = 204;
@@ -41,6 +42,7 @@ class SensorController extends AbstractController {
     const STATUS_EXCEPTION = 500;
 
     const VALIDATION_FAILED = "Validation failed.";
+    const VALIDATION_FAILED_ORDER_FIELDS = "Invalid order fields.";
     const VALIDATION_BAD_CONFIG = "No sensor data is configured in your environment file.";
     const VALIDATION_NO_RECORD = "No record found.";
     const VALIDATION_STATION_NAME = "Invalid station name.";
@@ -67,31 +69,37 @@ class SensorController extends AbstractController {
      */
     private $logger;
 
-    /**
-     * @var WeatherConfiguration
-     */
-    private $config;
-
     /** @var float|string Capture response execution time */
     private $time_start;
+
+    /** @var FilesystemAdapter  */
+    private $cache;
+
+    /** @var WeatherCacheHandler  */
+    private $configCache;
 
     /**
      * SensorController constructor.
      *
      * @param SensorRepository|null $sensorRepository
      * @param WeatherStationLogger $logger
-     * @param WeatherConfiguration $config
+     * @param WeatherCacheHandler $cacheHandler
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function __construct(SensorRepository $sensorRepository, WeatherStationLogger $logger, WeatherConfiguration $config) {
+    public function __construct(
+        SensorRepository $sensorRepository,
+        WeatherStationLogger $logger,
+        WeatherCacheHandler $cacheHandler) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
 
         $this->request  = new Request();
         $this->logger = $logger;
         $this->sensorRepository = $sensorRepository;
-        $this->config = $config;
-        $this->response->headers->set('weatherStation-version', $this->config->getConfigKey('application.version'));
+        $this->configCache = $cacheHandler;
+        $this->response->headers->set('weatherStation-version', $this->configCache->getConfigKey('application-version'));
         $this->time_start = microtime(true);
+        $this->cache = new FilesystemAdapter();
 
     }
 
@@ -102,34 +110,61 @@ class SensorController extends AbstractController {
      *         sensorName => (get by configured sensor names)
      *
      * @param Request $request
-     * @Cache(maxage=5, public=true)
      * @return Response
-     * @Route("/weatherstation/api/ordered", methods={"GET"}, name="get_by_ordered")
+     * @Route("/weatherstation/api/name/ordered", methods={"GET"}, name="get_by_name_ordered")
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function getByOrdered(Request $request): Response {
-        if ($this->response->isNotModified($request)) {
-            return $this->response;
-        }
-        $order = $request->get('order') ?? 'desc';
-        $orderField = $request->get('orderField');
+    public function getByNameOrdered(Request $request): Response {
+        $orderDirection = $request->get('order') ?? 'desc';
+        $orderField = $request->get('orderField') ?? 'insert_date_time';
         $sensorName = $request->get('sensorName');
-        $valid = $this->validateSensorName($sensorName);
-
-        if (!$valid) {
-            $this->response->setContent(self::VALIDATION_FAILED);
-            $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-            $this->logger->log(self::VALIDATION_FAILED, [
-                'method' => __FUNCTION__,
-                'order' => $order,
-                'orderField' => $orderField
-            ], Logger::ALERT);
-        } else {
-            $response = $this->sensorRepository->findOrdered($sensorName, $orderField = 'insert_date_time', $order);
+        $validOrder = $this->validateOrderFields(['orderDirection' => $orderDirection, 'orderField' => $orderField]);
+        $valid = $this->validateSensorName($sensorName, __FUNCTION__);
+        if ($valid && $validOrder) {
+            $response = $this->sensorRepository->findOrdered($sensorName, $orderField, $orderDirection);
             $this->validateResponse($response);
         }
         $this->updateResponseHeader();
-        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
+    }
+
+    /**
+     * Validate order fields
+     *
+     * @param array $fields
+     * @return bool
+     */
+    private function validateOrderFields(array $fields): bool {
+        dump($fields);
+        $valid = $validOperation = $validDirection =  true;
+        if (isset($fields['orderField'])) {
+            $orderField = $fields['orderField'];
+            $validField = in_array($orderField, SensorEntity::getValidFieldNames()) ?: false;
+            $valid = $validField;
+        }
+        if (isset($fields['orderDirection'])) {
+            $orderDirection = $fields['orderDirection'];
+            $validDirection = ($orderDirection === 'desc' || $orderDirection === 'asc');
+        }
+        if (isset($fields['operation'])) {
+            $validOperation  = in_array($fields['operation'], ['>', '>=', '<', '<=', '<>']);
+        }
+        if (!$valid || !$validOperation || $validDirection) {
+            $this->updateResponse(
+                self::VALIDATION_FAILED_ORDER_FIELDS,
+                self::STATUS_VALIDATION_FAILED,
+                ['loggerMsg' =>  self::VALIDATION_FAILED_ORDER_FIELDS,
+                    'loggerContext' => [
+                        'method' => __FUNCTION__,
+                        'orderDirection' => isset($fields['orderDirection']) ? $fields['orderDirection'] : 'not set',
+                        'orderField' => $orderField,
+                        'operation' => isset($fields['operation']) ? $fields['operation'] : 'not set'
+                    ],
+                    'loggerLevel' => Logger::ALERT
+                ]
+            );
+        }
+        return $valid && $validOperation && $validDirection;
     }
 
     /**
@@ -141,110 +176,29 @@ class SensorController extends AbstractController {
      *
      * @param Request $request
      * @param int $id
-     * @Cache(maxage=5, public=true)
      * @return Response
      * @Route("/weatherstation/api/id/ordered/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id_ordered")
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getByIDOrdered(Request $request, int $id): Response {
-        if ($this->response->isNotModified($request)) {
-            return $this->response;
-        }
-        $operation = $request->get('operation') ?? null;
-        $field = $request->get('field') ?? null;
+        $operation = $request->get('operation') ?? '>';
+        $field = $request->get('orderField') ??  'insert_date_time';
         $value = $request->get('value') ?? null;
-        $isOrderValid = !empty($operation) && !empty($field) && !empty($value);
-        if ($isOrderValid) {
-            $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
-            if (!$validSensorConfig) {
-                $this->updateResponse(
-                    self::VALIDATION_BAD_CONFIG,
-                    self::STATUS_VALIDATION_FAILED,
-                    [
-                        'loggerMsg' => self::VALIDATION_BAD_CONFIG,
-                        'loggerContext' => ['method' => __FUNCTION__],
-                        'loggerLevel' => Logger::ALERT
-                    ]
-                );
-            } else {
-                $valid = $this->validateStationID($id);
-                if ($valid) {
-                    $response = $this->sensorRepository->findByQueryOperation(
-                        [
-                            'station_id' => $id,
-                            'operation' => $operation,
-                            'field' => $field,
-                            'value' => $value
-                        ]
-                    );
-                    $this->validateResponse($response, $id);
-                }
-
-            }
-        } else {
-            $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-            $this->response->setContent(self::VALIDATION_FAILED);
-            $this->logger->log(self::VALIDATION_FAILED, [
-                'method' => __FUNCTION__,
-                'sentParams' => [
+        $validOrder = $this->validateOrderFields(['operation' => $operation, 'orderField' => $field]);
+        $isOrderValid = !empty($operation) && !empty($field) && !empty($value) && $validOrder;
+        $validStationID = $this->validateStationID($id, __FUNCTION__);
+        if ($isOrderValid && $validStationID) {
+            $response = $this->sensorRepository->findByQueryOperation(
+                [
+                    'station_id' => $id,
                     'operation' => $operation,
                     'field' => $field,
                     'value' => $value
                 ]
-            ],
-                Logger::ALERT
             );
+            $this->validateResponse($response, $id);
         }
         $this->updateResponseHeader();
-        $this->response->setETag(md5($this->response->getContent()));
-        return $this->response;
-    }
-
-    /**
-     * Set a config.
-     * @param Request $request
-     * @return Response
-     * @Route("/weatherstation/api/setconfig", methods={"POST"}, name="set_config")
-     */
-    public function setConfig(Request $request) {
-        $config = $request->get('config');
-        $configValue = $request->get('configValue');
-        $this->config->setConfigKey([$config => $configValue]);
-    return $this->response;
-    }
-
-    /**
-     * Get all weatherData by stationID
-     *
-     * @param int $id The room id.
-     * @param Request $request
-     * @return Response
-     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
-     * @Cache(maxage=5, public=true)
-     */
-    public function getByID(int $id, Request $request): Response {
-       if ($this->response->isNotModified($request)) {
-            return $this->response;
-       }
-        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
-        if (!$validSensorConfig) {
-            $this->updateResponse(
-                self::VALIDATION_BAD_CONFIG,
-                self::STATUS_VALIDATION_FAILED,
-                [
-                    'loggerMsg' => self::VALIDATION_BAD_CONFIG,
-                    'loggerContext' => ['method' => __FUNCTION__],
-                    'loggerLevel' => Logger::CRITICAL
-                ]
-            );
-        } else {
-            $valid = $this->validateStationID($id, __FUNCTION__);
-            if ($valid) {
-                $response = $this->sensorRepository->findByQuery(['station_id' => $id]);
-                $this->validateResponse($response, $id);
-            }
-        }
-        $this->updateResponseHeader();
-        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
     }
 
@@ -259,6 +213,9 @@ class SensorController extends AbstractController {
 
     /**
      * Validate API response.
+     *
+     * @param array $response
+     * @param string $sensorIdentifier
      */
     private function validateResponse(array $response, $sensorIdentifier = '') {
         $responseJson = $this->json($response)->getContent();
@@ -277,48 +234,37 @@ class SensorController extends AbstractController {
      * @param string $name Room name
      * @param Request $request
      * @return Response
-     * @Cache(maxage=5, public=true)
      * @Route("weatherstation/api/name/{name}", methods={"GET"}, requirements={"name"="\w+"}, name="get_by_name")
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getByName(string $name, Request $request): Response {
-        if ($this->response->isNotModified($request)) {
-            return $this->response;
+        $name = strtolower($name);
+        $validSensorConfig = $this->validateSensorName($name, __FUNCTION__);
+        if ($validSensorConfig) {
+            $response = $this->sensorRepository->findByQuery(['room' => $name]);
+            $this->validateResponse($response, $name);
+            $this->updateResponseHeader();
         }
-        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
-        if (!$validSensorConfig) {
-            $this->updateResponse(
-                self::VALIDATION_BAD_CONFIG,
-                self::STATUS_VALIDATION_FAILED,
-                [
-                    'loggerMsg' => self::VALIDATION_BAD_CONFIG,
-                    'loggerContext' => ['method' => __FUNCTION__],
-                    'loggerLevel' => Logger::CRITICAL
-                ]
-            );
-        } else {
-            $name = strtolower($name);
-            $valid = $this->validateSensorName($name, __FUNCTION__);
-            if ($valid) {
-                $response = $this->sensorRepository->findByQuery(['room' => $name]);
-                $this->validateResponse($response, $name);
-            }
-        }
-        $this->updateResponseHeader();
-        $this->response->setETag(md5($this->response->getContent()));
         return $this->response;
     }
 
     /**
-     * Update Response object and return
+     * Get all weatherData by stationID
      *
-     * @param string $message
-     * @param int $statusCode
-     * @param $loggerParams
+     * @param int $id The room id.
+     * @param Request $request
+     * @return Response
+     * @Route("/weatherstation/api/id/{id}", methods={"GET"}, requirements={"id"="\d+"}, name="get_by_id")
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function updateResponse(string $message, int $statusCode, $loggerParams) {
-        $this->response->setContent($message);
-        $this->response->setStatusCode($statusCode);
-        $this->logger->log($loggerParams['loggerMsg'], $loggerParams['loggerContext'],$loggerParams['loggerLevel']);
+    public function getByID(int $id, Request $request): Response {
+        $validSensorConfig = $this->validateStationID($id, __FUNCTION__);
+        if ($validSensorConfig) {
+            $response = $this->sensorRepository->findByQuery(['station_id' => $id]);
+            $this->validateResponse($response, $id);
+            $this->updateResponseHeader();
+        }
+        return $this->response;
     }
 
     /**
@@ -347,20 +293,9 @@ class SensorController extends AbstractController {
      * @param int $interval Interval for sending weather report emails.
      * @return Response
      * @throws Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function post(Request $request, int $interval = 1): Response {
-        $validSensorConfig = empty($this->config->getConfigs()['sensor']['config']) ? false : true;
-        if (!$validSensorConfig) {
-            $this->updateResponse(
-                self::VALIDATION_BAD_CONFIG,
-                self::STATUS_VALIDATION_FAILED,
-                [
-                    'loggerMsg' => self::VALIDATION_BAD_CONFIG,
-                    'loggerContext' => ['method' => __FUNCTION__],
-                    'loggerLevel' => Logger::CRITICAL
-                ]
-            );
-        } else {
             // turn request data into an array
             $parameters = json_decode($request->getContent(), true);
             $parameters = $this->normalizeData($parameters);
@@ -370,9 +305,9 @@ class SensorController extends AbstractController {
                 $valid = $this->validatePost($parameters, __FUNCTION__);
             }
             if ($valid) {
-                $validRoom = $this->validateSensorName($parameters['room'], __FUNCTION__);
-                $validStation = $this->validateStationID($parameters['station_id'], __FUNCTION__);
-                if (!$validRoom || !$validStation) {
+                $validStationName = $this->validateSensorName($parameters['room'], __FUNCTION__);
+                $validStationID = $this->validateStationID($parameters['station_id'], __FUNCTION__);
+                if (!$validStationName || !$validStationID) {
                     return $this->response;
                 }
 
@@ -385,19 +320,19 @@ class SensorController extends AbstractController {
                     $paramsSensorData = [
                         'tableName' => SensorEntity::class,
                         'dateTimeField' => 'insert_date_time',
-                        'interval' => $this->config->getConfigKey('pruning.records.interval') ?? $interval,
+                        'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? $interval,
 
                         ];
                     $paramsReportData = [
                         'tableName' => WeatherReportEntity::class,
                         'dateTimeField' => 'lastSentDate',
-                        'interval' => $this->config->getConfigKey('pruning.report.interval') ?? 2,
+                        'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
 
                     ];
                     $paramsLoggerData = [
                         'tableName' => WeatherLoggerEntity::class,
                         'dateTimeField' => 'insertDateTime',
-                        'interval' => $this->config->getConfigKey('pruning.logs.interval') ?? 1,
+                        'interval' => $this->configCache->getConfigKey('pruning-logs-interval') ?? 1,
 
                     ];
                     $this->sensorRepository->delete($paramsLoggerData);
@@ -409,7 +344,6 @@ class SensorController extends AbstractController {
                 }
 
             }
-        }
         $this->updateResponseHeader();
         return $this->response;
     }
@@ -449,17 +383,26 @@ class SensorController extends AbstractController {
     /**
      * Validate station name.
      *
-     * @param string $station Station data.
+     * @param string $stationName
      * @param string $sender Sending function.
      * @return bool|Response
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function validateSensorName(string $station, string $sender = '') {
+    private function validateSensorName(string $stationName, string $sender = '') {
         $valid = true;
-        if (!isset($this->config->getConfigs()['sensor']['config'][$station])) {
+        if (!$this->configCache->isConfigSetKey('sensor-config-'.$stationName)) {
             $valid = false;
-            $this->response->setContent(self::VALIDATION_STATION_NAME);
-            $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-            $this->logger->log(self::VALIDATION_STATION_NAME, ['name' => $station, 'sender'=> $sender], Logger::ALERT);
+            $this->updateResponse(
+                self::VALIDATION_STATION_NAME,
+                self::STATUS_VALIDATION_FAILED,
+                ['loggerMsg' => self::VALIDATION_STATION_NAME,
+                    'loggerContext' => [
+                        'method' => $sender,
+                        'stationName' => $stationName
+                    ],
+                    'loggerLevel' => Logger::ALERT
+                ]
+            );
         }
         return $valid;
     }
@@ -470,16 +413,38 @@ class SensorController extends AbstractController {
      * @param int $stationID
      * @param string $sender Sending function.
      * @return bool
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function validateStationID(int $stationID, string $sender = ''): bool {
         $valid = true;
-        $sensorData = array_flip($this->config->getConfigs()['sensor']['config']);
-        if (!isset($sensorData[$stationID])) {
+        if (!$this->configCache->isConfigSetValue($stationID)) {
             $valid = false;
-            $this->response->setContent(self::VALIDATION_STATION_ID);
-            $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
-            $this->logger->log(self::VALIDATION_STATION_ID, ['id' => $stationID, 'sender' => $sender], Logger::ALERT);
+            $this->updateResponse(
+                self::VALIDATION_STATION_ID,
+                self::STATUS_VALIDATION_FAILED,
+                ['loggerMsg' =>  self::VALIDATION_STATION_ID,
+                    'loggerContext' => [
+                        'method' => $sender,
+                        'stationID' => $stationID
+                    ],
+                    'loggerLevel' => Logger::ALERT
+                ]
+            );
         }
         return $valid;
     }
+
+    /**
+     * Update Response object and return
+     *
+     * @param string $message
+     * @param int $statusCode
+     * @param $loggerParams
+     */
+    private function updateResponse(string $message, int $statusCode, $loggerParams) {
+        $this->response->setContent($message);
+        $this->response->setStatusCode($statusCode);
+        $this->logger->log($loggerParams['loggerMsg'], $loggerParams['loggerContext'],$loggerParams['loggerLevel']);
+    }
+
 }

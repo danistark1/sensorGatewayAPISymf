@@ -132,4 +132,13 @@ class SensorEntity {
         $this->insert_date_time = $insert_date_time;
         return $this;
     }
+
+    /**
+     * Get valid field names.
+     *
+     * @return string[]
+     */
+    public static function getValidFieldNames(): array {
+        return ['temperature', 'humidity', 'insert_date_time', 'room','station_id'];
+    }
 }
