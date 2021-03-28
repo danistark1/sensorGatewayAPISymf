@@ -87,6 +87,8 @@ class SensorRepository extends ServiceEntityRepository {
         $roomGateway->setHumidity($params['humidity']);
         $roomGateway->setTemperature($params['temperature']);
         $roomGateway->setStationId($params['station_id']);
+        $batteryStatus = isset($params['battery_status']) ? $params['battery_status'] : null;
+        $roomGateway->setBatteryStatus($batteryStatus);
         $dt = StationDateTime::dateNow();
         $roomGateway->setInsertDateTime($dt);
         $result = true;

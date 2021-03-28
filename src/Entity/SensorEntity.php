@@ -47,6 +47,11 @@ class SensorEntity {
     private $insert_date_time;
 
     /**
+     * @ORM\Column(type="integer", nullable=true)
+     */
+    private $battery_status;
+
+    /**
      * @return int|null
      */
     public function getId(): ?int {
@@ -140,5 +145,17 @@ class SensorEntity {
      */
     public static function getValidFieldNames(): array {
         return ['temperature', 'humidity', 'insert_date_time', 'room','station_id'];
+    }
+
+    public function getBatteryStatus(): ?int
+    {
+        return $this->battery_status;
+    }
+
+    public function setBatteryStatus(?int $battery_status): self
+    {
+        $this->battery_status = $battery_status;
+
+        return $this;
     }
 }

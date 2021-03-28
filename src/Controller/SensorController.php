@@ -135,7 +135,6 @@ class SensorController extends AbstractController  {
      * @return bool
      */
     private function validateOrderFields(array $fields): bool {
-        dump($fields);
         $valid = $validOperation = $validDirection =  true;
         if (isset($fields['orderField'])) {
             $orderField = $fields['orderField'];
@@ -370,7 +369,7 @@ class SensorController extends AbstractController  {
      */
     private function validatePost(array $parameters, $sender): bool {
         $valid = true;
-        $valid = (isset($parameters['temperature']) &&  isset($parameters['humidity']) && isset($parameters['station_id']) && isset($parameters['room'])) ? $valid : !$valid;
+        $valid = (isset($parameters['temperature']) && isset($parameters['humidity']) && isset($parameters['station_id']) && isset($parameters['room'])) ? $valid : !$valid;
         if (!$valid) {
             $this->response->setContent(self::VALIDATION_STATION_PARAMS);
             $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
