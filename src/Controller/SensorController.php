@@ -119,7 +119,7 @@ class SensorController extends AbstractController  {
         $orderField = $request->get('orderField') ?? 'insert_date_time';
         $sensorName = $request->get('sensorName');
         $validOrder = $this->validateOrderFields(['orderDirection' => $orderDirection, 'orderField' => $orderField]);
-        $valid = $this->validateSensorName($sensorName, __FUNCTION__);
+        $valid = $this->validateSensorName($sensorName, __CLASS__.__FUNCTION__);
         if ($valid && $validOrder) {
             $response = $this->sensorRepository->findOrdered($sensorName, $orderField, $orderDirection);
             $this->validateResponse($response);
@@ -155,7 +155,7 @@ class SensorController extends AbstractController  {
                 self::STATUS_VALIDATION_FAILED,
                 ['loggerMsg' =>  self::VALIDATION_FAILED_ORDER_FIELDS,
                     'loggerContext' => [
-                        'method' => __FUNCTION__,
+                        'method' => __CLASS__.__FUNCTION__,
                         'orderDirection' => isset($fields['orderDirection']) ? $fields['orderDirection'] : 'not set',
                         'orderField' => $orderField,
                         'operation' => isset($fields['operation']) ? $fields['operation'] : 'not set'
@@ -186,7 +186,7 @@ class SensorController extends AbstractController  {
         $value = $request->get('value') ?? null;
         $validOrder = $this->validateOrderFields(['operation' => $operation, 'orderField' => $field]);
         $isOrderValid = !empty($operation) && !empty($field) && !empty($value) && $validOrder;
-        $validStationID = $this->validateStationID($id, __FUNCTION__);
+        $validStationID = $this->validateStationID($id, __CLASS__.__FUNCTION__);
         if ($isOrderValid && $validStationID) {
             $response = $this->sensorRepository->findByQueryOperation(
                 [
@@ -239,7 +239,7 @@ class SensorController extends AbstractController  {
      */
     public function getByName(string $name, Request $request): Response {
         $name = strtolower($name);
-        $validSensorConfig = $this->validateSensorName($name, __FUNCTION__);
+        $validSensorConfig = $this->validateSensorName($name, __CLASS__.__FUNCTION__);
         if ($validSensorConfig) {
             $response = $this->sensorRepository->findByQuery(['room' => $name]);
             $this->validateResponse($response, $name);
@@ -258,7 +258,7 @@ class SensorController extends AbstractController  {
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getByID(int $id, Request $request): Response {
-        $validSensorConfig = $this->validateStationID($id, __FUNCTION__);
+        $validSensorConfig = $this->validateStationID($id, __CLASS__.__FUNCTION__);
         if ($validSensorConfig) {
             $response = $this->sensorRepository->findByQuery(['station_id' => $id]);
             $this->validateResponse($response, $id);
@@ -302,11 +302,11 @@ class SensorController extends AbstractController  {
 
             $valid = false;
             if ($parameters && is_array($parameters)) {
-                $valid = $this->validatePost($parameters, __FUNCTION__);
+                $valid = $this->validatePost($parameters, __CLASS__.__FUNCTION__);
             }
             if ($valid) {
-                $validStationName = $this->validateSensorName($parameters['room'], __FUNCTION__);
-                $validStationID = $this->validateStationID($parameters['station_id'], __FUNCTION__);
+                $validStationName = $this->validateSensorName($parameters['room'], __CLASS__.__FUNCTION__);
+                $validStationID = $this->validateStationID($parameters['station_id'], __CLASS__.__FUNCTION__);
                 if (!$validStationName || !$validStationID) {
                     return $this->response;
                 }

@@ -77,7 +77,6 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
         } catch (\Exception $e) {
             return 'An Error occured during save: ' .$e->getMessage();
         }
-        $this->cache->delete('cache_'.$key);
         return $response;
     }
 

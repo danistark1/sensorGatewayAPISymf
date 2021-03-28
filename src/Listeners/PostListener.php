@@ -282,7 +282,7 @@ class PostListener {
     private function prepareNotifications(array $latestSensorData): array {
         $massagedData = $latestSensorData['weatherData'] ?? [];
         if (empty($massagedData)) {
-            $this->logger->log("weatherData is not set",["function"=> __FUNCTION__], Logger::CRITICAL);
+            $this->logger->log("weatherData is not set",["function"=> __CLASS__.__FUNCTION__], Logger::CRITICAL);
             return $massagedData;
         }
         $thresholdTempUpper = $thresholdTempLower = $thresholdHumidUpper = $thresholdHumidLower = false;
@@ -349,7 +349,7 @@ class PostListener {
         ];
         $valid = ArraysUtils::validateEmails(($emailsArray));
         if (!$valid) {
-            $this->logger->log('Invalid Emails.', ['sender' => __FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
+            $this->logger->log('Invalid Emails.', ['sender' => __CLASS__.__FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
             return !$success;
         }
         //return true;
@@ -371,7 +371,12 @@ class PostListener {
             } catch (TransportExceptionInterface $exception) {
                 $success = false;
                 $this->logger->log($emailTitle . ' Not Sent!',
-                    [$sensorData, 'exceptionMsg' =>$exception->getMessage()], Logger::DEBUG
+                    [
+                        'sender' => __CLASS__.__FUNCTION__,
+                        'sensorData' => $sensorData,
+                        'exceptionMsg' => $exception->getMessage()
+                    ],
+                    Logger::DEBUG
                 );
 
             }
@@ -394,7 +399,7 @@ class PostListener {
                     'emailBody' =>$reportType]
             );
         } catch (OptimisticLockException | ORMException $e) {
-            $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
+            $this->logger->log($e->getMessage(), ['sender' => __CLASS__.__FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
         }
     }
 }

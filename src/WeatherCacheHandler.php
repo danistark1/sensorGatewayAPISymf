@@ -13,12 +13,6 @@ use Symfony\Contracts\Cache\ItemInterface;
 //TODO Rename class to WeatherConfigCacheHandler
 class WeatherCacheHandler {
 
-//    public const PRUNING = 'pruning-report-';
-//    public const MAIN_SENSOR_CONFIG = 'sensor-config-';
-//    public const APP_CONFIG = 'application-';
-//    public const READINGS_CONFIG = 'weatherReport-';
-
-
     // CONFIG TYPES
     public const CONFIG_TYPE_THRESHOLDS = 'thresholds';
     public const CONFIG_TYPE_PRUNING = 'pruning';
@@ -120,6 +114,8 @@ class WeatherCacheHandler {
 
     /**
      * Get an array of cached sensor configs.
+     *
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getSensorConfigs() {
         // Construct a cached copy of
