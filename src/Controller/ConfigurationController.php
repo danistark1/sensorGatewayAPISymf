@@ -6,6 +6,7 @@ use App\Repository\WeatherConfigurationRepository;
 use App\WeatherCacheHandler;
 use App\WeatherConfiguration;
 use App\WeatherStationLogger;
+use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +23,17 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  */
 class ConfigurationController extends AbstractController {
 
+    // Status Codes
+    const STATUS_OK = 200;
+    const STATUS_RESOURCE_CREATED = 201;
+    const STATUS_NO_CONTENT = 204;
+    const STATUS_VALIDATION_FAILED = 400;
+    const STATUS_NOT_FOUND = 404;
+    const STATUS_EXCEPTION = 500;
+
+    public const VALIDATION_INVALID_KEY = 'Config key could not be found.';
+    public const VALIDATION_INVALID_VALUE = 'Config value could not be found.';
+
     /** @var WeatherConfigurationRepository|null  */
     public $weatherConfigurationRepository;
 
@@ -35,6 +47,9 @@ class ConfigurationController extends AbstractController {
     /** @var WeatherCacheHandler  */
     private $configCache;
 
+    /** @var WeatherStationLogger  */
+    private $logger;
+
     /**
      * SensorController constructor.
      *
@@ -45,7 +60,6 @@ class ConfigurationController extends AbstractController {
     public function __construct(WeatherConfigurationRepository $weatherConfigurationRepository, WeatherStationLogger $logger, WeatherCacheHandler $configCache) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
-
         $this->request  = new Request();
         $this->logger = $logger;
         $this->weatherConfigurationRepository = $weatherConfigurationRepository;
@@ -98,10 +112,84 @@ class ConfigurationController extends AbstractController {
     /**
      * Update a config
      *
-     *@Route("/weatherstation/api/config/{key}/{value}", methods={"PATCH"}, name="update_config")
+     * @Route("/weatherstation/api/config/{key}/{value}", methods={"PATCH"}, name="update_config")
+     * @param $key
+     * @param $value
+     * @return Response
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function patch($key, $value) {
-        $this->weatherConfigurationRepository->update($key,$value);
+    public function patch($key, $value): Response {
+        $isValidKey = $this->validateKey($key, __CLASS__.__FUNCTION__);
+        $isValidValue = $this->validateValue($value, __CLASS__.__FUNCTION__);
+        if ($isValidKey && $isValidValue) {
+            $this->weatherConfigurationRepository->update($key, $value);
+            $this->configCache->clearCache();
+            $this->response->setStatusCode(self::STATUS_RESOURCE_CREATED);
+        }
         return $this->response;
+    }
+
+    /**
+     * Validate config key.
+     *
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function validateKey(string $key, $sender): bool {
+        $valid = true;
+        $isValidKey = $this->configCache->isConfigSetKey($key);
+        if (!$isValidKey) {
+            $this->updateResponse(
+                self::VALIDATION_INVALID_KEY,
+                self::STATUS_VALIDATION_FAILED,
+                ['loggerMsg' =>  self::VALIDATION_INVALID_KEY,
+                    'loggerContext' => [
+                        'method' => $sender,
+                        'key' => $key
+                    ],
+                    'loggerLevel' => Logger::ALERT
+                ]
+            );
+        }
+        return $valid;
+    }
+
+    /**
+     * Update Response object and return.
+     *
+     * @param string $message
+     * @param int $statusCode
+     * @param $loggerParams
+     */
+    private function updateResponse(string $message, int $statusCode, $loggerParams) {
+        $this->response->setContent($message);
+        $this->response->setStatusCode($statusCode);
+        $this->logger->log($loggerParams['loggerMsg'], $loggerParams['loggerContext'],$loggerParams['loggerLevel']);
+    }
+
+    /**
+     * Validate config value.
+     *
+     * @param string $value
+     * @param string $sender
+     * @return bool
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function validateValue(string $value, string $sender): bool {
+        $valid = true;
+        $isValidValue = $this->configCache->isConfigSetValue($value);
+        if (!$isValidValue) {
+            $this->updateResponse(
+                self::VALIDATION_INVALID_VALUE,
+                self::STATUS_VALIDATION_FAILED,
+                ['loggerMsg' =>  self::VALIDATION_INVALID_VALUE,
+                    'loggerContext' => [
+                        'method' => $sender,
+                        'value' => $value
+                    ],
+                    'loggerLevel' => Logger::ALERT
+                ]
+            );
+        }
+        return $valid;
     }
 }
