@@ -30,6 +30,7 @@ class ConfigurationController extends AbstractController {
     const STATUS_VALIDATION_FAILED = 400;
     const STATUS_NOT_FOUND = 404;
     const STATUS_EXCEPTION = 500;
+    const CACHE_CLEARED = 'Cache cleared.';
 
     public const VALIDATION_INVALID_KEY = 'Config key could not be found.';
     public const VALIDATION_INVALID_VALUE = 'Config value could not be found.';
@@ -130,6 +131,28 @@ class ConfigurationController extends AbstractController {
     }
 
     /**
+     * Kill cache.
+     *
+     * @Route("/weatherstation/api/config/deletecache", methods={"DELETE"}, name="delete_cache")
+     * @return Response
+     */
+    public function deleteCache(): Response {
+        $this->configCache->clearCache();
+        $this->updateResponse(
+            self::CACHE_CLEARED,
+            self::STATUS_OK,
+            [
+                'loggerMsg' => 'Cache cleared.',
+                'loggerLevel' => Logger::INFO,
+                'loggerContext' => [
+                    'method' => __CLASS__.__FUNCTION__,
+                ],
+            ]
+        );
+        return $this->response;
+    }
+
+    /**
      * Validate config key.
      *
      * @throws \Psr\Cache\InvalidArgumentException
@@ -160,10 +183,12 @@ class ConfigurationController extends AbstractController {
      * @param int $statusCode
      * @param $loggerParams
      */
-    private function updateResponse(string $message, int $statusCode, $loggerParams) {
+    private function updateResponse(string $message, int $statusCode, $loggerParams = []) {
         $this->response->setContent($message);
         $this->response->setStatusCode($statusCode);
-        $this->logger->log($loggerParams['loggerMsg'], $loggerParams['loggerContext'],$loggerParams['loggerLevel']);
+        if (!empty($loggerParams)) {
+            $this->logger->log($loggerParams['loggerMsg'], $loggerParams['loggerContext'],$loggerParams['loggerLevel']);
+        }
     }
 
     /**
