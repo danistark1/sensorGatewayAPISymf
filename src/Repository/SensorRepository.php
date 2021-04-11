@@ -8,6 +8,7 @@ use App\Entity\SensorEntity;
 use App\Utils\StationDateTime;
 use App\WeatherStationLogger;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
 use Doctrine\ORM\ORMInvalidArgumentException;
 use Doctrine\Persistence\ManagerRegistry;
@@ -20,9 +21,9 @@ use Monolog\Logger;
  * @method SensorEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class SensorRepository extends ServiceEntityRepository {
-
     public function __construct(ManagerRegistry $registry) {
         parent::__construct($registry, SensorEntity::class);
+
     }
 
     /**
@@ -79,26 +80,32 @@ class SensorRepository extends ServiceEntityRepository {
      * @return bool True is operation is successful, false otherwise.
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function save(array $params) {
-        $em = $this->getEntityManager();
         $roomGateway = new SensorEntity();
         $roomGateway->setRoom($params['room']);
         $roomGateway->setHumidity($params['humidity']);
         $roomGateway->setTemperature($params['temperature']);
         $roomGateway->setStationId($params['station_id']);
-        $batteryStatus = isset($params['battery_status']) ? $params['battery_status'] : null;
+        $batteryStatus = $params['battery_status'] ?? null;
         $roomGateway->setBatteryStatus($batteryStatus);
         $dt = StationDateTime::dateNow();
         $roomGateway->setInsertDateTime($dt);
         $result = true;
+        // Get the entity manager, begin a transaction.
+        $em = $this->getEntityManager();
+        $em->getConnection()->beginTransaction();
         try {
             $em->persist($roomGateway);
-        } catch (ORMInvalidArgumentException | ORMException $e) {
+            $em->flush();
+            // Try and commit the transaction
+            $em->getConnection()->commit();
+        } catch (ORMInvalidArgumentException | ORMException | ConnectionException $e) {
             $result = false;
-           //$this->logger->log('test', [], Logger::CRITICAL);
+            //$this->logger->log('test', [], Logger::CRITICAL);
         }
-        $em->flush();
+
         return $result;
     }
 
