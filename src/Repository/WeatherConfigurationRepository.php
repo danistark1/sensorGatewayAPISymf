@@ -66,9 +66,11 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
     public function update($key, $value) {
         $em = $this->getEntityManager();
         $qb = $em->createQueryBuilder();
+        $dt = StationDateTime::dateNow('', true);
         try {
         $q = $qb->update(WeatherConfigurationEntity::class, 'c')
         ->set('c.configValue', $qb->expr()->literal($value))
+        ->set('c.configDate', $qb->expr()->literal($dt))
         ->where('c.configKey = ?1')
         ->setParameter(1, $key)
         ->getQuery();
