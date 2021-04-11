@@ -6,6 +6,7 @@ use App\Entity\SensorEntity;
 use App\Entity\WeatherReportEntity;
 use App\Utils\StationDateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
 use Doctrine\ORM\ORMInvalidArgumentException;
 use Doctrine\Persistence\ManagerRegistry;
@@ -56,13 +57,16 @@ class WeatherReportRepository extends ServiceEntityRepository
         $weatherEntity->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
         $weatherEntity->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
         $result = true;
+        $em->getConnection()->beginTransaction();
         try {
             $em->persist($weatherEntity);
-        } catch (ORMInvalidArgumentException | ORMException $e) {
+            $em->flush();
+            // Try and commit the transaction
+            $em->getConnection()->commit();
+        } catch (ORMInvalidArgumentException | ORMException | ConnectionException $e) {
             $result = false;
             //$this->logger->log('test', [], Logger::CRITICAL);
         }
-        $em->flush();
         return $result;
     }
     /*
