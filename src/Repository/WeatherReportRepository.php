@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\SensorEntity;
 use App\Entity\WeatherReportEntity;
 use App\Utils\StationDateTime;
+use App\WeatherStationLogger;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
@@ -17,11 +18,21 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method WeatherReportEntity[]    findAll()
  * @method WeatherReportEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class WeatherReportRepository extends ServiceEntityRepository
-{
-    public function __construct(ManagerRegistry $registry)
-    {
+class WeatherReportRepository extends ServiceEntityRepository {
+
+    /** @var \App\WeatherStationLogger  */
+    private $logger;
+
+    /**
+     * WeatherReportRepository constructor.
+     *
+     * @param \Doctrine\Persistence\ManagerRegistry $registry
+     * @param \App\WeatherStationLogger $logger
+     */
+    public function __construct(ManagerRegistry $registry, WeatherStationLogger $logger) {
         parent::__construct($registry, WeatherReportEntity::class);
+        $this->logger = $logger;
+
     }
 
     // /**
@@ -65,7 +76,7 @@ class WeatherReportRepository extends ServiceEntityRepository
             $em->getConnection()->commit();
         } catch (ORMInvalidArgumentException | ORMException | ConnectionException $e) {
             $result = false;
-            //$this->logger->log('test', [], Logger::CRITICAL);
+            $this->logger->log('test', [], Logger::CRITICAL);
         }
         return $result;
     }
