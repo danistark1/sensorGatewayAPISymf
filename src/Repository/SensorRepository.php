@@ -21,8 +21,13 @@ use Monolog\Logger;
  * @method SensorEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class SensorRepository extends ServiceEntityRepository {
-    public function __construct(ManagerRegistry $registry) {
+
+    /** @var \App\WeatherStationLogger  */
+    private $logger;
+
+    public function __construct(ManagerRegistry $registry, WeatherStationLogger $logger) {
         parent::__construct($registry, SensorEntity::class);
+        $this->logger = $logger;
 
     }
 
@@ -103,7 +108,7 @@ class SensorRepository extends ServiceEntityRepository {
             $em->getConnection()->commit();
         } catch (ORMInvalidArgumentException | ORMException | ConnectionException $e) {
             $result = false;
-            //$this->logger->log('test', [], Logger::CRITICAL);
+            $this->logger->log('Record save failed.', ['function' => __CLASS__.__FUNCTION__], Logger::CRITICAL);
         }
 
         return $result;
