@@ -8,6 +8,14 @@
 
 Symfony REST APIs for the weatherStation project https://github.com/danistark1/weatherStation
 
+## Table of contents ##
+ - [Setup](#setup "Setup")
+ - [Debugging](#debugging "Debugging")
+ - [Pruning](#pruning "Pruning")
+ - [Caching](#caching "Caching")
+ - [REST API Calls](#rest-api-calls "REST API Calls")
+ - [UnitTests](#unittests "UnitTests")
+
 # Setup
 
 - composer install
@@ -106,7 +114,7 @@ Everytime a new record is added, report, logging & sensor readings data will be 
 
 Configration GETs are all cached. If a new config is added, cache gets cleated, if an already existing config is updated, cache key of that config is deleted.
 
-# Usage / REST API Calls
+# REST API Calls
 
 **SensorController**
 
@@ -178,7 +186,7 @@ Everytime a record is posted:
 - Deletes previous sensor readings reports
 https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L209
 
-### UnitTests(needs updating)
+### UnitTests
 
 | Test  | Tests | Result |
 | ------------- | ------------- |------------- |
