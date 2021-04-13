@@ -108,15 +108,25 @@ Configration GETs are all cached. If a new config is added, cache gets cleated, 
 
 # Usage / REST API Calls
 
+**SensorController**
+
 **GET**
 
 **Get readings by Station ID**
 
-- GET weatherstationapi/{station_ID} by_station_id
+- GET /weatherstation/api/id/{id}
 
 **Get readings by Station Name**
 
-- GET weatherstationapi/{name}
+- GET weatherstation/api/name/{name}
+
+**Get by name ordered**
+
+- GET /weatherstation/api/name/ordered
+
+**Get by id ordered**
+
+- GET /weatherstation/api/id/ordered/{id}
 
 **POST**
 
@@ -135,18 +145,38 @@ Configration GETs are all cached. If a new config is added, cache gets cleated, 
 }
 ```
 
+**DELETE**
+
+- DELETE weatherstationapi/{interval}
+
+Deletes all weather data older than interval (default is 1 day).
+
+**ConfigurationController**
+
+**GET**
+
+**Get config by key**
+
+- GET /weatherstation/api/config/{key}
+
+**UPDATE**
+
+- PATCH /weatherstation/api/config/{key}/{value}
+
+**DELETE**
+
+- DELETE /weatherstation/api/config/deletecache
+
+**POST**
+
+- POST /weatherstation/api/config
+
 Everytime a record is posted:
 
 - Checks if an old record needs to be deleted (records older than the defined interval are deleted) [SensorController.php#L214](https://github.com/danistark1/weatherStationApiSymfony/blob/3264b8a09dfdf1c64fabc59e2ba96a0eaaafcffa/src/Controller/SensorController.php#L214)
 - Checks if a weather report needs to be sent [PostListener.php#L54](https://github.com/danistark1/weatherStationApiSymfony/blob/5b274a2fa9e151e37a3793e3eb838863ccc673bd/src/Listeners/PostListener.php#L54)
 - Deletes previous sensor readings reports
 https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L209
-
-**DELETE**
-
-- DELETE weatherstationapi/{interval}
-
-Deletes all weather data older than interval (default is 1 day).
 
 ### UnitTests(needs updating)
 
