@@ -158,8 +158,8 @@ class ConfigurationController extends AbstractController {
      */
     public function patch($key, $value): Response {
         $isValidKey = $this->validateKey($key, __CLASS__.__FUNCTION__);
-        $isValidValue = $this->validateValue($value, __CLASS__.__FUNCTION__);
-        if ($isValidKey && $isValidValue) {
+//        $isValidValue = $this->validateValue($value, __CLASS__.__FUNCTION__);
+        if ($isValidKey) {
             $this->weatherConfigurationRepository->update($key, $value);
             $this->configCache->clearCache();
             $this->response->setStatusCode(self::STATUS_RESOURCE_CREATED);
