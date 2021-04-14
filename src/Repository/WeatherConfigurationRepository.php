@@ -26,7 +26,6 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
      */
     public function __construct(ManagerRegistry $registry) {
         parent::__construct($registry, WeatherConfigurationEntity::class);
-        //$this->cache = new FilesystemAdapter();
     }
 
 

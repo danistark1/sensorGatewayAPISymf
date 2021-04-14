@@ -9,6 +9,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
+use App\Utils\ArraysUtils;
 
 //TODO Rename class to WeatherConfigCacheHandler
 class WeatherCacheHandler {
@@ -110,6 +111,58 @@ class WeatherCacheHandler {
             $this->clearCacheKey('cache_'.$value);
         }
         return !empty($value[0]) ? $value[0]->getConfigKey() : false;
+    }
+
+    /**
+     * Get all available config keys.
+     *
+     * @return mixed
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public function getAllConfigKeys() {
+        // Gets a cache value and sets it if it doesn't already exist.
+        $value = $this->cache->get('cache_all_config_keys', function (ItemInterface $item) {
+            // TODO should be a config.
+            $item->expiresAfter(self::CACHE_EXPIRE);
+            // cache expires in 365 days.
+            $weatherRepo = new WeatherConfigurationRepository($this->managerRegistry);
+            $dbValue =  $weatherRepo->findAll();
+            $configKeys = [];
+            foreach($dbValue as $value) {
+                $configKeys[] = $value->getConfigKey();
+            }
+            sort($configKeys);
+            return $configKeys;
+        });
+        // If config is not found, make sure cache key is also not found.
+        if (empty($value)) {
+            $this->clearCacheKey('cache_all_config_keys');
+        }
+        return $value;
+    }
+
+    /**
+     * Get all available config keys.
+     *
+     * @return mixed
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public function getAllConfigs() {
+        // Gets a cache value and sets it if it doesn't already exist.
+        $value = $this->cache->get('cache_all_configs', function (ItemInterface $item) {
+            // TODO should be a config.
+            $item->expiresAfter(self::CACHE_EXPIRE);
+            // cache expires in 365 days.
+            $weatherRepo = new WeatherConfigurationRepository($this->managerRegistry);
+            $dbValue =  $weatherRepo->findAll();
+            sort($dbValue);
+            return $dbValue;
+        });
+        // If config is not found, make sure cache key is also not found.
+        if (empty($value)) {
+            $this->clearCacheKey('cache_all_configs');
+        }
+        return $value;
     }
 
     /**
