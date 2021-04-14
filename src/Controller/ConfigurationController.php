@@ -31,6 +31,7 @@ class ConfigurationController extends AbstractController {
     const STATUS_NOT_FOUND = 404;
     const STATUS_EXCEPTION = 500;
     const CACHE_CLEARED = 'Cache cleared.';
+    const NO_RESPONSE = 'Empty response.';
 
     public const VALIDATION_INVALID_KEY = 'Config key could not be found.';
     public const VALIDATION_INVALID_VALUE = 'Config value could not be found.';
@@ -70,12 +71,48 @@ class ConfigurationController extends AbstractController {
     }
 
     /**
-     * @Route("/configuration", name="configuration")
+     * Get all available config Keys.
+     * This will be used for a drop-down ui to update configs.
+     *
+     * @Route("/weatherstation/api/config/keys", name="get_all_config_keys")
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function index(): Response {
-        return $this->render('configuration/index.html.twig', [
-            'controller_name' => 'ConfigurationController',
-        ]);
+    public function getAllKeys(): Response {
+        $allConfigs = $this->configCache->getAllConfigKeys();
+        $this->validateResponse($allConfigs, __CLASS__.__FUNCTION__);
+        return $this->response;
+    }
+
+    /**
+     * Get all configs.
+     *
+     * @Route("/weatherstation/api/configs", name="get_all_configs")
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public function getAllConfigs(): Response {
+        $allConfigs = $this->configCache->getAllConfigs();
+        $this->validateResponse($allConfigs, __CLASS__.__FUNCTION__);
+        return $this->response;
+    }
+
+
+
+
+    /**
+     * Validate API response.
+     *
+     * @param array $response
+     * @param string $sensorIdentifier
+     */
+    private function validateResponse(array $response, $configIdentifier = '') {
+        $responseJson = $this->json($response)->getContent();
+        if (empty($responseJson)){
+            $this->response->setStatusCode(self::STATUS_NO_CONTENT);
+            $this->logger->log(self::NO_RESPONSE, ['id' => $configIdentifier], Logger::INFO);
+        } else {
+            $this->response->setContent($responseJson);
+            $this->response->setStatusCode(self::STATUS_OK);
+        }
     }
 
     /**
