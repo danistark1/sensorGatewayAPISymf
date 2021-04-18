@@ -24,6 +24,9 @@ use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 
 /**
  * Class PostListener
@@ -107,6 +110,7 @@ class PostListener {
         $this->logger = $logger;
         $this->weatherReportRepository = $weatherReportRepository;
         $this->configCache = $configCacheHandler;
+
     }
 
     /**
@@ -138,9 +142,9 @@ class PostListener {
             $notificationsCounter = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
             if ($notificationsCounter && $notificationsCounter !== 0 && $notificationsReportEnabled && !empty($latestNotificationsData)) {
                 try {
-                    $success = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
-                    if ($success === true) {
-                        $this->updateWeatherReport(self::REPORT_NOTIFICATIONS, $notificationsCounter);
+                    $result = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
+                    if (!empty($result)) {
+                        $this->updateWeatherReport(self::REPORT_NOTIFICATIONS, $notificationsCounter, $result);
                     }
 
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
@@ -155,9 +159,9 @@ class PostListener {
             $reportCounter = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
             if ($reportCounter && $reportCounter !==0 && $reportEnabled && !empty($latestSensorData)) {
                 try {
-                    $success = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
-                    if ($success) {
-                        $this->updateWeatherReport(self::REPORT_DAILY, $reportCounter);
+                    $result = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
+                    if (!empty($result)) {
+                        $this->updateWeatherReport(self::REPORT_DAILY, $reportCounter, $result);
                     }
                 } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
@@ -264,8 +268,8 @@ class PostListener {
         $currentDate = StationDateTime::dateNow('', false, 'Y-m-d');
         // Get the last inserted report for the current day;
         $reportDataDb = $this->entityManager->getRepository(WeatherReportEntity::class)->findBy(
-            array('emailBody' => $reportType, 'lastSentDate' => $currentDate),
-            array('id'=>'DESC'),
+            array('reportType' => $reportType, 'lastSentDate' => $currentDate),
+            array('id'=> 'DESC'),
             1,
             0);
         $this->entityManager->clear();
@@ -333,14 +337,15 @@ class PostListener {
      * @param array $sensorData
      * @param string $twigEmail
      * @param string $emailTitle
+     * @return bool
      * @throws TransportExceptionInterface
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
-     * @return bool
+     * @throws \Twig\Error\SyntaxError*@throws \Psr\Cache\InvalidArgumentException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function sendReport(array $sensorData, string $twigEmail, string $emailTitle = 'Report'): bool {
-        $success = true;
+    private function sendReport(array $sensorData, string $twigEmail, string $emailTitle = 'Report'): array {
+        $emailData = [];
         $fromEmail = $this->configCache->getConfigKey('weatherReport-fromEmail');
         $toEmail = $this->configCache->getConfigKey('weatherReport-toEmail');
         $emailsArray = [
@@ -350,10 +355,16 @@ class PostListener {
         $valid = ArraysUtils::validateEmails(($emailsArray));
         if (!$valid) {
             $this->logger->log('Invalid Emails.', ['sender' => __CLASS__.__FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
-            return !$success;
+            return $emailData;
         }
         //return true;
         if (!empty($sensorData) && !$this->configCache->getConfigKey('weatherReport-disableEmails')) {
+            $emailData = [
+                'from' => $fromEmail,
+                'to' => $toEmail,
+                'subject' => $emailTitle,
+                'sensorData' => $sensorData
+            ];
             $message = (new Email())
                 ->from($fromEmail)
                 ->to($toEmail)
@@ -369,7 +380,7 @@ class PostListener {
             try {
                 $this->mailer->send($message);
             } catch (TransportExceptionInterface $exception) {
-                $success = false;
+
                 $this->logger->log($emailTitle . ' Not Sent!',
                     [
                         'sender' => __CLASS__.__FUNCTION__,
@@ -380,10 +391,8 @@ class PostListener {
                 );
 
             }
-        } else {
-            $success = false;
         }
-        return $success;
+        return $emailData;
     }
 
     /**
@@ -392,11 +401,14 @@ class PostListener {
      * @param string $reportType
      * @param $notificationsCounter
      */
-    private function updateWeatherReport(string $reportType, $notificationsCounter) {
+    private function updateWeatherReport(string $reportType, $notificationsCounter, $emailBody) {
         try {
             $this->weatherReportRepository->save(
-                ['counter' => $notificationsCounter,
-                    'emailBody' =>$reportType]
+                [
+                    'counter' => $notificationsCounter,
+                    'emailBody' => $emailBody,
+                    'reportType' => $reportType
+                ]
             );
         } catch (OptimisticLockException | ORMException $e) {
             $this->logger->log($e->getMessage(), ['sender' => __CLASS__.__FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);

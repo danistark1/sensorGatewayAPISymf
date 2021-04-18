@@ -18,7 +18,7 @@ class WeatherReportEntity {
     private $id;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="array", nullable=true)
      */
     private $emailBody;
 
@@ -37,6 +37,11 @@ class WeatherReportEntity {
      */
     private $lastSentCounter;
 
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $reportType;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -47,7 +52,7 @@ class WeatherReportEntity {
         return $this->emailBody;
     }
 
-    public function setEmailBody(?string $emailBody): self
+    public function setEmailBody(?array $emailBody): self
     {
         $this->emailBody = $emailBody;
 
@@ -86,6 +91,18 @@ class WeatherReportEntity {
     public function setLastSentCounter(?int $lastSentCounter): self
     {
         $this->lastSentCounter = $lastSentCounter;
+
+        return $this;
+    }
+
+    public function getReportType(): ?string
+    {
+        return $this->reportType;
+    }
+
+    public function setReportType(?string $reportType): self
+    {
+        $this->reportType = $reportType;
 
         return $this;
     }
