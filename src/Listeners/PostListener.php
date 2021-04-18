@@ -9,7 +9,6 @@ use App\Entity\WeatherReportEntity;
 use App\Repository\WeatherReportRepository;
 use App\Utils\ArraysUtils;
 use App\WeatherCacheHandler;
-use App\WeatherConfiguration;
 use App\WeatherStationLogger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Event\LifecycleEventArgs;
@@ -24,9 +23,6 @@ use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
-use Symfony\Component\Serializer\Serializer;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 
 /**
  * Class PostListener
