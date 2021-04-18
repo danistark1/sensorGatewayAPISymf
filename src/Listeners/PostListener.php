@@ -142,7 +142,10 @@ class PostListener {
             $notificationsCounter = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
             if ($notificationsCounter && $notificationsCounter !== 0 && $notificationsReportEnabled && !empty($latestNotificationsData)) {
                 try {
-                    $result = $this->sendReport($latestNotificationsData, '/sensor/weatherStationReportNotifications.html.twig', self::REPORT_NOTIFICATIONS);
+                    $result = $this->sendReport(
+                        $latestNotificationsData,
+                        '/sensor/weatherStationReportNotifications.html.twig',
+                        $this->configCache->getConfigKey('weatherReport-emailTitleNotifications') ?? self::REPORT_NOTIFICATIONS);
                     if (!empty($result)) {
                         $this->updateWeatherReport(self::REPORT_NOTIFICATIONS, $notificationsCounter, $result);
                     }
@@ -159,7 +162,10 @@ class PostListener {
             $reportCounter = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
             if ($reportCounter && $reportCounter !==0 && $reportEnabled && !empty($latestSensorData)) {
                 try {
-                    $result = $this->sendReport($latestSensorData, '/sensor/weatherStationDailyReport.html.twig', self::REPORT_DAILY);
+                    $result = $this->sendReport(
+                        $latestSensorData,
+                        '/sensor/weatherStationDailyReport.html.twig',
+                        $this->configCache->getConfigKey('weatherReport-emailTitleDailyReport') ?? self::REPORT_DAILY);
                     if (!empty($result)) {
                         $this->updateWeatherReport(self::REPORT_DAILY, $reportCounter, $result);
                     }
