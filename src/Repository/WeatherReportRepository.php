@@ -65,6 +65,7 @@ class WeatherReportRepository extends ServiceEntityRepository {
         $weatherEntity = new WeatherReportEntity();
         $weatherEntity->setLastSentCounter($params['counter']);
         $weatherEntity->setEmailBody($params['emailBody']);
+        $weatherEntity->setReportType($params['reportType']);
         $weatherEntity->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
         $weatherEntity->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
         $result = true;
