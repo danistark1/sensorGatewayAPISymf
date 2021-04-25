@@ -90,25 +90,25 @@ class WeatherCacheHandler {
      * @return mixed
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function getConfigValue(string $value = '') {
+    public function getConfigValue(string $config = '') {
         //$this->cache->delete('cache_'.$value);
         // Gets a cache value and sets it if it doesn't already exist.
-        $value = $this->cache->get('cache_'.$value, function (ItemInterface $item) use ($value) {
+        $value = $this->cache->get('cache_'.$config, function (ItemInterface $item) use ($config) {
             // TODO should be a config.
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 41 days.
             $weatherRepo = new WeatherConfigurationRepository($this->managerRegistry);
             $dbValue = [];
-            if ($value !== '') {
-                $dbValue =  $weatherRepo->findBy(['configValue' => $value],[], 1);
+            if ($config !== '') {
+                $dbValue =  $weatherRepo->findBy(['configValue' => $config],[], 1);
             } else {
-                $this->cache->delete('cache_'.$value);
+                $this->cache->delete('cache_'.$config);
             }
             return $dbValue;
         });
         // If config is not found, make sure cache key is also not found.
         if (empty($value)) {
-            $this->clearCacheKey('cache_'.$value);
+            $this->clearCacheKey('cache_'.$config);
         }
         return !empty($value[0]) ? $value[0]->getConfigKey() : false;
     }

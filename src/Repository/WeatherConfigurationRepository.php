@@ -28,8 +28,6 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
         parent::__construct($registry, WeatherConfigurationEntity::class);
     }
 
-
-
     /**
      * Save Config record to the database.
      *

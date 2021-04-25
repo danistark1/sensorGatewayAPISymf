@@ -11,6 +11,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
 use Doctrine\ORM\ORMInvalidArgumentException;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Monolog\Logger;
 
@@ -143,6 +144,7 @@ class SensorRepository extends ServiceEntityRepository {
             }
         }
     }
+
 
     // /**
     //  * @return RoomGateway[] Returns an array of RoomGateway objects
