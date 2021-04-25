@@ -17,6 +17,7 @@ use Exception;
 use Monolog\Logger;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -100,7 +101,21 @@ class SensorController extends AbstractController  {
         $this->response->headers->set('weatherStation-version', $this->configCache->getConfigKey('application-version'));
         $this->time_start = microtime(true);
         $this->cache = new FilesystemAdapter();
+        $configsDefined = $this->configCache->getAllConfigs();
+        $this->checkConfiguration($configsDefined);
 
+    }
+
+    /**
+     * Check if configuration has been defined.
+     *
+     * @param $configsDefined
+     * @return Response
+     */
+    private function checkConfiguration($configsDefined): void {
+        if (empty($configsDefined)) {
+            throw new HttpException(401, 'Something went wrong. Configuration has not been defined.');
+        }
     }
 
     /**
