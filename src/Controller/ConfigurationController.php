@@ -95,9 +95,6 @@ class ConfigurationController extends AbstractController {
         return $this->response;
     }
 
-
-
-
     /**
      * Validate API response.
      *
