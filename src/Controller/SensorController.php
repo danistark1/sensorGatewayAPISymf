@@ -1,7 +1,4 @@
 <?php
-/**
- * @author Dani Stark(danistark1.ca@gmail.com).
- */
 namespace App\Controller;
 
 use App\Entity\SensorEntity;
@@ -32,6 +29,7 @@ use App\Kernel;
 /**
  * Class SensorController
  *
+ * @author Dani Stark
  * @package App\Controller
  */
 class SensorController extends AbstractController  {
@@ -114,6 +112,7 @@ class SensorController extends AbstractController  {
      */
     private function checkConfiguration($configsDefined): void {
         if (empty($configsDefined)) {
+            $trace = (new \Exception)->getTrace();
             throw new HttpException(401, 'Something went wrong. Configuration has not been defined.');
         }
     }
@@ -273,6 +272,7 @@ class SensorController extends AbstractController  {
      */
     public function getByID(int $id, Request $request): Response {
         $validSensorConfig = $this->validateStationID($id, __CLASS__.__FUNCTION__);
+
         if ($validSensorConfig) {
             $response = $this->sensorRepository->findByQuery(['station_id' => $id]);
             $this->validateResponse($response, $id);
