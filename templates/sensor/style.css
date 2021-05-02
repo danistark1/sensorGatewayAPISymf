@@ -17,7 +17,7 @@
     display: block;
     max-width: 100%;
     white-space: nowrap;
-    background-color: white;
+    /*background-color: white;*/
 }
 
 .fl-table td, .fl-table th {
@@ -30,17 +30,17 @@
     font-size: 12px;
 }
 
-.fl-table thead th {
+.fl-table th {
     color: #ffffff;
-    background: #4FC3A1;
+    background: #023d42;
+    border: 1px solid #ddd;
 }
 
-
-.fl-table thead th:nth-child(odd) {
-    color: #ffffff;
-    background: #324960;
+.fl-table tr {
+    color: #f2f2f2;
+    background: #3f4955;
 }
 
-.fl-table tr:nth-child(even) {
-    background: #F8F8F8;
+.fl-table tr:hover {
+    background-color: #2d2a2a;
 }
