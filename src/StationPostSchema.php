@@ -24,6 +24,7 @@ class StationPostSchema {
     public static function setSchema() {
         if (empty(self::$schema)) {
             self::$schema = new Assert\Collection([
+                'id' => [new Assert\PositiveOrZero()],
                 'room' => [new AssertSensorName()], // Custom rule.
                 'temperature' =>  [new Assert\NotBlank([])],
                 'humidity' => [new Assert\NotBlank([])],
