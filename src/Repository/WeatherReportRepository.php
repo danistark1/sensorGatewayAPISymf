@@ -11,6 +11,8 @@ use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
 use Doctrine\ORM\ORMInvalidArgumentException;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Persistence\Mapping\MappingException;
+use Monolog\Logger;
 
 /**
  * @method WeatherReportEntity|null find($id, $lockMode = null, $lockVersion = null)
@@ -70,15 +72,18 @@ class WeatherReportRepository extends ServiceEntityRepository {
         $weatherEntity->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
         $result = true;
         $em->getConnection()->beginTransaction();
+
         try {
+            $em->clear();
             $em->persist($weatherEntity);
             $em->flush();
             // Try and commit the transaction
             $em->getConnection()->commit();
-        } catch (ORMInvalidArgumentException | ORMException | ConnectionException $e) {
+        } catch (ORMInvalidArgumentException | ORMException | ConnectionException | MappingException $e) {
             $result = false;
             $this->logger->log('test', [], Logger::CRITICAL);
         }
+
         return $result;
     }
     /*
