@@ -405,6 +405,8 @@ class PostListener {
      */
     private function updateWeatherReport(string $reportType, $notificationsCounter, $emailBody) {
         try {
+            $lastSent = $this->getLastSentReport($reportType);
+            $notificationsCounter = $this->shouldSendReport($lastSent, $reportType);
             $this->weatherReportRepository->save(
                 [
                     'counter' => $notificationsCounter,
