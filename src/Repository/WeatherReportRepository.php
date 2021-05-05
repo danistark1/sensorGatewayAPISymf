@@ -74,7 +74,6 @@ class WeatherReportRepository extends ServiceEntityRepository {
         $em->getConnection()->beginTransaction();
 
         try {
-            $em->clear();
             $em->persist($weatherEntity);
             $em->flush();
             // Try and commit the transaction

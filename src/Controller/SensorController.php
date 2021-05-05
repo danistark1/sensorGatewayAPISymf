@@ -79,7 +79,6 @@ class SensorController extends AbstractController  {
     /** @var WeatherCacheHandler  */
     private $configCache;
 
-    public static $lock = 0;
     /**
      * SensorController constructor.
      *
@@ -94,7 +93,6 @@ class SensorController extends AbstractController  {
         WeatherCacheHandler $cacheHandler) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
-
         $this->request  = new Request();
         $this->logger = $logger;
         $this->sensorRepository = $sensorRepository;
@@ -104,7 +102,6 @@ class SensorController extends AbstractController  {
         $this->cache = new FilesystemAdapter();
         $configsDefined = $this->configCache->getAllConfigs();
         $this->checkConfiguration($configsDefined);
-
     }
 
     /**
@@ -340,58 +337,47 @@ class SensorController extends AbstractController  {
         StationPostSchema $stationPostSchema,
         int $interval = 1
     ): Response {
-        if (self::$lock === 0) {
-            self::$lock = 1;
-
-            $parameters = json_decode($request->getContent(), true);
-            $parameters = $this->normalizeData($parameters);
-            $violations = $validator->validate($parameters, $stationPostSchema::$schema);
-            $valid = $this->validateRequest($violations);
-            if ($valid) {
-                //TODO Add custom validation
-                $validStationID = $this->validateStationID($parameters['station_id'], __CLASS__ . __FUNCTION__);
-                if (!$validStationID) {
-                    return $this->response;
-                }
-                $result = $this->sensorRepository->save($parameters);
-                // TODO UPDATE date for both tables to be insert_date_time.
-                if ($result) {
-                    // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
-                    // keeping weather data for 24hrs.
-                    //Delete  sensor data. Table room_gateway
-                    $paramsSensorData = [
-                        'tableName' => SensorEntity::class,
-                        'dateTimeField' => 'insert_date_time',
-                        'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? $interval,
-
-                    ];
-                    $paramsReportData = [
-                        'tableName' => WeatherReportEntity::class,
-                        'dateTimeField' => 'lastSentDate',
-                        'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
-
-                    ];
-                    $paramsLoggerData = [
-                        'tableName' => WeatherLoggerEntity::class,
-                        'dateTimeField' => 'insertDateTime',
-                        'interval' => $this->configCache->getConfigKey('pruning-logs-interval') ?? 1,
-
-                    ];
-                    $this->sensorRepository->delete($paramsLoggerData);
-                    $this->sensorRepository->delete($paramsSensorData);
-                    $this->sensorRepository->delete($paramsReportData);
-                    $this->response->setStatusCode(self::STATUS_OK);
-                } else {
-                    $this->response->setStatusCode(self::STATUS_EXCEPTION);
-                }
-
+        $parameters = json_decode($request->getContent(), true);
+        $parameters = $this->normalizeData($parameters);
+        $violations = $validator->validate($parameters, $stationPostSchema::$schema);
+        $valid = $this->validateRequest($violations);
+        if ($valid) {
+            //TODO Add custom validation
+            $validStationID = $this->validateStationID($parameters['station_id'], __CLASS__ . __FUNCTION__);
+            if (!$validStationID) {
+                return $this->response;
             }
-        } else {
-            $this->response->setStatusCode(self::STATUS_EXCEPTION);
-            $this->response->setContent('Record locked.');
-            $this->logger->log('Record locked', ['sender' => __CLASS__.__FUNCTION__], Logger::CRITICAL);
+            $result = $this->sensorRepository->save($parameters);
+            // TODO UPDATE date for both tables to be insert_date_time.
+            if ($result) {
+                // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
+                // keeping weather data for 24hrs.
+                //Delete  sensor data. Table room_gateway
+                $paramsSensorData = [
+                    'tableName' => SensorEntity::class,
+                    'dateTimeField' => 'insert_date_time',
+                    'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? $interval,
+
+                ];
+                $paramsReportData = [
+                    'tableName' => WeatherReportEntity::class,
+                    'dateTimeField' => 'lastSentDate',
+                    'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
+
+                ];
+                $paramsLoggerData = [
+                    'tableName' => WeatherLoggerEntity::class,
+                    'dateTimeField' => 'insertDateTime',
+                    'interval' => $this->configCache->getConfigKey('pruning-logs-interval') ?? 1,
+                ];
+                $this->sensorRepository->delete($paramsLoggerData);
+                $this->sensorRepository->delete($paramsSensorData);
+                $this->sensorRepository->delete($paramsReportData);
+                $this->response->setStatusCode(self::STATUS_OK);
+            } else {
+                $this->response->setStatusCode(self::STATUS_EXCEPTION);
+            }
         }
-        self::$lock = 0;
         $this->updateResponseHeader();
         return $this->response;
     }
