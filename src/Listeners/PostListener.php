@@ -156,6 +156,12 @@ class PostListener {
 
             // Check if daily report needs to be sent.
             $reportCounter = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
+            $this->logger->log('Logging shouldSendReport',[
+                '$lastSentDailyReport' => $lastSentDailyReport,
+                'reportEnabled'=> $reportEnabled,
+                'latestsensordata' =>$latestSensorData
+            ], Logger::INFO);
+
             if ($reportCounter && $reportCounter !== 0 && $reportEnabled && !empty($latestSensorData)) {
                 try {
                     $this->logger->log('Logging shouldSendReport',['shouldsendreportL161' => $reportCounter], Logger::INFO);
