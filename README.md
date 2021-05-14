@@ -1,12 +1,12 @@
 <p align="center">
-    <b> 🌧 weatherStationApiSymfony 🌧</b>
+    <b> 🌧 WirelessSensorGatewayAPI 🌧</b>
 </p>
 <p align="center">
     <img src="https://github.com/danistark1/weatherStationApiSymfony/blob/main/animatedCloud.gif" />
 </p>
 
 
-Symfony REST APIs for the weatherStation project https://github.com/danistark1/weatherStation
+Symfony REST APIs for the WirelessSensorGateway project https://github.com/danistark1/wirelessSensorGateway
 
 ## Table of contents ##
  - [Setup](#setup "Setup")
