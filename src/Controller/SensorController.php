@@ -4,6 +4,7 @@ namespace App\Controller;
 use App\Entity\SensorEntity;
 use App\Entity\WeatherLoggerEntity;
 use App\Entity\WeatherReportEntity;
+use App\StationPostSchema;
 use App\WeatherCacheHandler;
 use App\WeatherConfiguration;
 use App\WeatherStationLogger;
@@ -16,6 +17,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -91,7 +93,6 @@ class SensorController extends AbstractController  {
         WeatherCacheHandler $cacheHandler) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
-
         $this->request  = new Request();
         $this->logger = $logger;
         $this->sensorRepository = $sensorRepository;
@@ -101,7 +102,6 @@ class SensorController extends AbstractController  {
         $this->cache = new FilesystemAdapter();
         $configsDefined = $this->configCache->getAllConfigs();
         $this->checkConfiguration($configsDefined);
-
     }
 
     /**
@@ -300,6 +300,28 @@ class SensorController extends AbstractController  {
     }
 
     /**
+     * Validate incoming request.
+     *
+     * @param Request $request
+     * @return bool $valid If request is valid.
+     */
+    private function validateRequest($violations = []): bool {
+        $valid = true;
+        if ($violations instanceof  ConstraintViolationListInterface && $violations->count() > 0) {
+            $formatedViolationList = [];
+            for ($i = 0; $i < $violations->count(); $i++) {
+                $violation = $violations->get($i);
+                $formatedViolationList[] = array($violation->getPropertyPath() => $violation->getMessage());
+            }
+            $this->logger->log('Schema validation failed', $formatedViolationList, Logger::ALERT);
+            $this->response->setContent(json_encode($formatedViolationList));
+            $this->response->setStatusCode(self::STATUS_VALIDATION_FAILED);
+            $valid = false;
+        }
+        return $valid;
+    }
+
+    /**
      * Post weatherData.
      *
      * @Route("/weatherstation/api",  methods={"POST"}, name="post_by_name")
@@ -309,55 +331,53 @@ class SensorController extends AbstractController  {
      * @throws Exception
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function post(Request $request, int $interval = 1): Response {
-            // turn request data into an array
-            $parameters = json_decode($request->getContent(), true);
-            $parameters = $this->normalizeData($parameters);
-
-            $valid = false;
-            if ($parameters && is_array($parameters)) {
-                $valid = $this->validatePost($parameters, __CLASS__.__FUNCTION__);
+    public function post(
+        Request $request,
+        ValidatorInterface $validator,
+        StationPostSchema $stationPostSchema,
+        int $interval = 1
+    ): Response {
+        $parameters = json_decode($request->getContent(), true);
+        $parameters = $this->normalizeData($parameters);
+        $violations = $validator->validate($parameters, $stationPostSchema::$schema);
+        $valid = $this->validateRequest($violations);
+        if ($valid) {
+            //TODO Add custom validation
+            $validStationID = $this->validateStationID($parameters['station_id'], __CLASS__ . __FUNCTION__);
+            if (!$validStationID) {
+                return $this->response;
             }
-            if ($valid) {
-                $validStationName = $this->validateSensorName($parameters['room'], __CLASS__.__FUNCTION__);
-                $validStationID = $this->validateStationID($parameters['station_id'], __CLASS__.__FUNCTION__);
-                if (!$validStationName || !$validStationID) {
-                    return $this->response;
-                }
+            $result = $this->sensorRepository->save($parameters);
+            // TODO UPDATE date for both tables to be insert_date_time.
+            if ($result) {
+                // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
+                // keeping weather data for 24hrs.
+                //Delete  sensor data. Table room_gateway
+                $paramsSensorData = [
+                    'tableName' => SensorEntity::class,
+                    'dateTimeField' => 'insert_date_time',
+                    'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? $interval,
 
-                $result = $this->sensorRepository->save($parameters);
-                // TODO UPDATE date for both tables to be insert_date_time.
-                if ($result) {
-                    // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
-                    // keeping weather data for 24hrs.
-                    //Delete  sensor data. Table room_gateway
-                    $paramsSensorData = [
-                        'tableName' => SensorEntity::class,
-                        'dateTimeField' => 'insert_date_time',
-                        'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? $interval,
+                ];
+                $paramsReportData = [
+                    'tableName' => WeatherReportEntity::class,
+                    'dateTimeField' => 'lastSentDate',
+                    'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
 
-                        ];
-                    $paramsReportData = [
-                        'tableName' => WeatherReportEntity::class,
-                        'dateTimeField' => 'lastSentDate',
-                        'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
-
-                    ];
-                    $paramsLoggerData = [
-                        'tableName' => WeatherLoggerEntity::class,
-                        'dateTimeField' => 'insertDateTime',
-                        'interval' => $this->configCache->getConfigKey('pruning-logs-interval') ?? 1,
-
-                    ];
-                    $this->sensorRepository->delete($paramsLoggerData);
-                    $this->sensorRepository->delete($paramsSensorData);
-                    $this->sensorRepository->delete($paramsReportData);
-                    $this->response->setStatusCode(self::STATUS_OK);
-                } else {
-                    $this->response->setStatusCode(self::STATUS_EXCEPTION);
-                }
-
+                ];
+                $paramsLoggerData = [
+                    'tableName' => WeatherLoggerEntity::class,
+                    'dateTimeField' => 'insertDateTime',
+                    'interval' => $this->configCache->getConfigKey('pruning-logs-interval') ?? 1,
+                ];
+                $this->sensorRepository->delete($paramsLoggerData);
+                $this->sensorRepository->delete($paramsSensorData);
+                $this->sensorRepository->delete($paramsReportData);
+                $this->response->setStatusCode(self::STATUS_OK);
+            } else {
+                $this->response->setStatusCode(self::STATUS_EXCEPTION);
             }
+        }
         $this->updateResponseHeader();
         return $this->response;
     }

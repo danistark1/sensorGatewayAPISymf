@@ -111,7 +111,6 @@ class SensorRepository extends ServiceEntityRepository {
             $result = false;
             $this->logger->log('Record save failed.', ['function' => __CLASS__.__FUNCTION__], Logger::CRITICAL);
         }
-
         return $result;
     }
 

@@ -54,6 +54,14 @@ class SensorEntity {
      */
     private $battery_status;
 
+    public static $validSensorNames = [
+        'garage',
+        'basement',
+        'living_room',
+        'outside',
+        'bedroom'
+    ];
+
     /**
      * @return int|null
      */

@@ -156,8 +156,10 @@ class PostListener {
 
             // Check if daily report needs to be sent.
             $reportCounter = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
-            if ($reportCounter && $reportCounter !==0 && $reportEnabled && !empty($latestSensorData)) {
+            if ($reportCounter && $reportCounter !== 0 && $reportEnabled && !empty($latestSensorData)) {
                 try {
+                    $this->logger->log('Logging shouldSendReport',['shouldsendreportL161' => $reportCounter], Logger::INFO);
+
                     $result = $this->sendReport(
                         $latestSensorData,
                         '/sensor/weatherStationDailyReport.html.twig',
@@ -169,7 +171,6 @@ class PostListener {
                     $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
                 }
             }
-
         }
     }
 
@@ -194,6 +195,8 @@ class PostListener {
         $currentTime = StationDateTime::dateNow('', true, 'H:i:s');
         /** @var WeatherReportEntity $lastSentDailyReport */
         $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : 0;
+        $this->logger->log('Logging $lastReportLastCounter',['$lastReportLastCounter' => $lastReportLastCounter], Logger::INFO);
+        $this->logger->log('Logging $lastSentDailyReport',['$lastSentDailyReport' => $lastSentDailyReport], Logger::INFO);
 
         if (!empty($lastSentDailyReport)) {
             // First & Second report already sent, get out.
@@ -233,7 +236,7 @@ class PostListener {
         //   "outside" => "12154"]
         // Remove any invalid entries before calling temp & humidity methods on an empty array.
 
-        $prepareData = $weatherData =  [];
+        $prepareData =  [];
         foreach ($stationSensorConfigs as $sensorName => $stationID) {
             $sensorData = $this->entityManager->getRepository(SensorEntity::class)->findOrdered($sensorName);
             if(!empty($sensorData)) {
@@ -405,6 +408,10 @@ class PostListener {
      */
     private function updateWeatherReport(string $reportType, $notificationsCounter, $emailBody) {
         try {
+            //$lastSent = $this->getLastSentReport($reportType);
+            //$notificationsCounter = $this->shouldSendReport($lastSent, $reportType);
+            $this->logger->log('updateWeatherReport',['updateWeatherReportCounter' => $notificationsCounter], Logger::INFO);
+
             $this->weatherReportRepository->save(
                 [
                     'counter' => $notificationsCounter,

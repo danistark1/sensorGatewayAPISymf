@@ -64,8 +64,7 @@ class MonologDBHandler extends AbstractProcessingHandler {
                 } else {
                     $logEntry->setContext([]);
                 }
-
-
+                $this->em->clear();
                 $this->em->persist($logEntry);
                 $this->em->flush();
             } catch (\Exception $e) {
