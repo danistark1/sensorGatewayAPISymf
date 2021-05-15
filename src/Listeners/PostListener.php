@@ -158,8 +158,6 @@ class PostListener {
             $reportCounter = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
             if ($reportCounter && $reportCounter !== 0 && $reportEnabled && !empty($latestSensorData)) {
                 try {
-                    $this->logger->log('Logging shouldSendReport',['shouldsendreportL161' => $reportCounter], Logger::INFO);
-
                     $result = $this->sendReport(
                         $latestSensorData,
                         '/sensor/weatherStationDailyReport.html.twig',
@@ -195,9 +193,6 @@ class PostListener {
         $currentTime = SensorDateTime::dateNow('', true, 'H:i:s');
         /** @var SensorReportEntity $lastSentDailyReport */
         $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : 0;
-        $this->logger->log('Logging $lastReportLastCounter',['$lastReportLastCounter' => $lastReportLastCounter], Logger::INFO);
-        $this->logger->log('Logging $lastSentDailyReport',['$lastSentDailyReport' => $lastSentDailyReport], Logger::INFO);
-
         if (!empty($lastSentDailyReport)) {
             // First & Second report already sent, get out.
             if ($lastReportLastCounter === 2) {
