@@ -2,14 +2,14 @@
 
 namespace App\Entity;
 
-use App\Repository\WeatherLoggerRepository;
+use App\Repository\SensorLoggerRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass=WeatherLoggerRepository::class)
- * @ORM\Table(name="weatherLogger")
+ * @ORM\Entity(repositoryClass=SensorLoggerRepository::class)
+ * @ORM\Table(name="sensorLogger")
  */
-class WeatherLoggerEntity
+class SensorLoggerEntity
 {
     /**
      * @ORM\Id

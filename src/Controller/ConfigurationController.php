@@ -2,10 +2,10 @@
 
 namespace App\Controller;
 
-use App\Repository\WeatherConfigurationRepository;
-use App\WeatherCacheHandler;
-use App\WeatherConfiguration;
-use App\WeatherStationLogger;
+use App\Repository\SensorConfigurationRepository;
+use App\SensorCacheHandler;
+use App\SensorConfiguration;
+use App\SensorGatewayLogger;
 use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,7 +36,7 @@ class ConfigurationController extends AbstractController {
     public const VALIDATION_INVALID_KEY = 'Config key could not be found.';
     public const VALIDATION_INVALID_VALUE = 'Config value could not be found.';
 
-    /** @var WeatherConfigurationRepository|null  */
+    /** @var SensorConfigurationRepository|null  */
     public $weatherConfigurationRepository;
 
     /**
@@ -46,20 +46,20 @@ class ConfigurationController extends AbstractController {
 
     private $cache;
 
-    /** @var WeatherCacheHandler  */
+    /** @var SensorCacheHandler  */
     private $configCache;
 
-    /** @var WeatherStationLogger  */
+    /** @var SensorGatewayLogger  */
     private $logger;
 
     /**
      * SensorController constructor.
      *
-     * @param WeatherConfigurationRepository|null $weatherConfigurationRepository
-     * @param WeatherStationLogger $logger
-     * @param WeatherConfiguration $config
+     * @param SensorConfigurationRepository|null $weatherConfigurationRepository
+     * @param SensorGatewayLogger $logger
+     * @param SensorConfiguration $config
      */
-    public function __construct(WeatherConfigurationRepository $weatherConfigurationRepository, WeatherStationLogger $logger, WeatherCacheHandler $configCache) {
+    public function __construct(SensorConfigurationRepository $weatherConfigurationRepository, SensorGatewayLogger $logger, SensorCacheHandler $configCache) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
         $this->request  = new Request();

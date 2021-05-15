@@ -5,11 +5,11 @@
 namespace App\Listeners;
 
 use App\Entity\SensorEntity;
-use App\Entity\WeatherReportEntity;
-use App\Repository\WeatherReportRepository;
+use App\Entity\SensorReportEntity;
+use App\Repository\SensorReportRepository;
 use App\Utils\ArraysUtils;
-use App\WeatherCacheHandler;
-use App\WeatherStationLogger;
+use App\SensorCacheHandler;
+use App\SensorGatewayLogger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\OptimisticLockException;
@@ -18,7 +18,7 @@ use Monolog\Logger;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
-use App\Utils\StationDateTime;
+use App\Utils\SensorDateTime;
 use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
@@ -71,7 +71,7 @@ class PostListener {
     public $mailer;
 
     /**
-     * @var WeatherStationLogger
+     * @var SensorGatewayLogger
      */
     private $logger;
 
@@ -80,10 +80,10 @@ class PostListener {
      */
     private $entityManager;
 
-    /** @var WeatherReportRepository  */
+    /** @var SensorReportRepository  */
     private $weatherReportRepository;
 
-    /** @var WeatherCacheHandler  */
+    /** @var SensorCacheHandler  */
     private $configCache;
 
     /**
@@ -91,16 +91,16 @@ class PostListener {
      *
      * @param Environment $templating
      * @param MailerInterface $mailer
-     * @param WeatherStationLogger $logger
-     * @param WeatherReportRepository $weatherReportRepository
-     * @param WeatherCacheHandler $configCacheHandler
+     * @param SensorGatewayLogger $logger
+     * @param SensorReportRepository $weatherReportRepository
+     * @param SensorCacheHandler $configCacheHandler
      */
     public function __construct(
         Environment $templating,
         MailerInterface $mailer,
-        WeatherStationLogger $logger,
-        WeatherReportRepository $weatherReportRepository,
-        WeatherCacheHandler $configCacheHandler) {
+        SensorGatewayLogger $logger,
+        SensorReportRepository $weatherReportRepository,
+        SensorCacheHandler $configCacheHandler) {
         $this->templating = $templating;
         $this->mailer = $mailer;
         $this->logger = $logger;
@@ -192,8 +192,8 @@ class PostListener {
         $firstReport = $reportType === 'notification' ? ($firstNotificationTime ?? self::FIRST_NOTIFICATION_TIME) : ($firstReportTime ?? self::FIRST_REPORT_TIME);
         $secondReport = $reportType === 'notification' ? ($secondNotificationTime ?? self::SECOND_NOTIFICATION_TIME) : ($secondReportTime ?? self::SECOND_REPORT_TIME);
 
-        $currentTime = StationDateTime::dateNow('', true, 'H:i:s');
-        /** @var WeatherReportEntity $lastSentDailyReport */
+        $currentTime = SensorDateTime::dateNow('', true, 'H:i:s');
+        /** @var SensorReportEntity $lastSentDailyReport */
         $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : 0;
         $this->logger->log('Logging $lastReportLastCounter',['$lastReportLastCounter' => $lastReportLastCounter], Logger::INFO);
         $this->logger->log('Logging $lastSentDailyReport',['$lastSentDailyReport' => $lastSentDailyReport], Logger::INFO);
@@ -270,9 +270,9 @@ class PostListener {
      * @throws \Exception
      */
     private function getLastSentReport(string $reportType): array {
-        $currentDate = StationDateTime::dateNow('', false, 'Y-m-d');
+        $currentDate = SensorDateTime::dateNow('', false, 'Y-m-d');
         // Get the last inserted report for the current day;
-        $reportDataDb = $this->entityManager->getRepository(WeatherReportEntity::class)->findBy(
+        $reportDataDb = $this->entityManager->getRepository(SensorReportEntity::class)->findBy(
             array('reportType' => $reportType, 'lastSentDate' => $currentDate),
             array('id'=> 'DESC'),
             1,

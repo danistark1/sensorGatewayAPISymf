@@ -4,7 +4,7 @@
 namespace App;
 
 
-use App\Repository\WeatherConfigurationRepository;
+use App\Repository\SensorConfigurationRepository;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -12,7 +12,7 @@ use Symfony\Contracts\Cache\ItemInterface;
 use App\Utils\ArraysUtils;
 
 //TODO Rename class to WeatherConfigCacheHandler
-class WeatherCacheHandler {
+class SensorCacheHandler {
 
     // CONFIG TYPES
     public const CONFIG_TYPE_THRESHOLDS = 'thresholds';
@@ -48,7 +48,7 @@ class WeatherCacheHandler {
         $value = $this->cache->get('cache_'.$lookupKey, function (ItemInterface $item) use ($lookupKey) {
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 365 days.
-            $weatherConfigRepo = new WeatherConfigurationRepository($this->managerRegistry);
+            $weatherConfigRepo = new SensorConfigurationRepository($this->managerRegistry);
             if ($lookupKey !== '') {
                 $dbValue =  $weatherConfigRepo->findBy(['configKey' => $lookupKey],[], 1);
             } else {
@@ -97,7 +97,7 @@ class WeatherCacheHandler {
             // TODO should be a config.
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 41 days.
-            $weatherRepo = new WeatherConfigurationRepository($this->managerRegistry);
+            $weatherRepo = new SensorConfigurationRepository($this->managerRegistry);
             $dbValue = [];
             if ($config !== '') {
                 $dbValue =  $weatherRepo->findBy(['configValue' => $config],[], 1);
@@ -125,7 +125,7 @@ class WeatherCacheHandler {
             // TODO should be a config.
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 365 days.
-            $weatherRepo = new WeatherConfigurationRepository($this->managerRegistry);
+            $weatherRepo = new SensorConfigurationRepository($this->managerRegistry);
             $dbValue =  $weatherRepo->findAll();
             $configKeys = [];
             foreach($dbValue as $value) {
@@ -153,7 +153,7 @@ class WeatherCacheHandler {
             // TODO should be a config.
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 365 days.
-            $weatherRepo = new WeatherConfigurationRepository($this->managerRegistry);
+            $weatherRepo = new SensorConfigurationRepository($this->managerRegistry);
             $dbValue =  $weatherRepo->findAll();
             sort($dbValue);
             return $dbValue;
@@ -184,7 +184,7 @@ class WeatherCacheHandler {
             // TODO should be a config.
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 365 days.
-            $weatherRepo = new WeatherConfigurationRepository($this->managerRegistry);
+            $weatherRepo = new SensorConfigurationRepository($this->managerRegistry);
             $dbValue =  $weatherRepo->findBy(['config_type' => self::CONFIG_TYPE_SENSOR]);
             $dbConfigs = [];
             foreach($dbValue as $key => $value) {

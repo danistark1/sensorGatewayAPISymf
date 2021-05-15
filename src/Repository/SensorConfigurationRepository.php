@@ -2,8 +2,8 @@
 
 namespace App\Repository;
 
-use App\Entity\WeatherConfigurationEntity;
-use App\Utils\StationDateTime;
+use App\Entity\SensorConfigurationEntity;
+use App\Utils\SensorDateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\ORMException;
 use Doctrine\ORM\ORMInvalidArgumentException;
@@ -12,12 +12,12 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
- * @method WeatherConfigurationEntity|null find($id, $lockMode = null, $lockVersion = null)
- * @method WeatherConfigurationEntity|null findOneBy(array $criteria, array $orderBy = null)
- * @method WeatherConfigurationEntity[]    findAll()
- * @method WeatherConfigurationEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method SensorConfigurationEntity|null find($id, $lockMode = null, $lockVersion = null)
+ * @method SensorConfigurationEntity|null findOneBy(array $criteria, array $orderBy = null)
+ * @method SensorConfigurationEntity[]    findAll()
+ * @method SensorConfigurationEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class WeatherConfigurationRepository extends ServiceEntityRepository {
+class SensorConfigurationRepository extends ServiceEntityRepository {
     /** @var FilesystemAdapter  */
     private $cache;
 
@@ -25,7 +25,7 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
      *
      */
     public function __construct(ManagerRegistry $registry) {
-        parent::__construct($registry, WeatherConfigurationEntity::class);
+        parent::__construct($registry, SensorConfigurationEntity::class);
     }
 
     /**
@@ -38,12 +38,12 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
      */
     public function save(array $params) {
         $em = $this->getEntityManager();
-        $weatherConfigEnt = new WeatherConfigurationEntity();
+        $weatherConfigEnt = new SensorConfigurationEntity();
         $weatherConfigEnt->setConfigKey($params['config_key']);
         $weatherConfigEnt->setConfigValue($params['config_value']);
         $weatherConfigEnt->setConfigType($params['config_type']);
 
-        $dt = StationDateTime::dateNow();
+        $dt = SensorDateTime::dateNow();
         $weatherConfigEnt->setConfigDate($dt);
 
         $result = true;
@@ -63,9 +63,9 @@ class WeatherConfigurationRepository extends ServiceEntityRepository {
     public function update($key, $value) {
         $em = $this->getEntityManager();
         $qb = $em->createQueryBuilder();
-        $dt = StationDateTime::dateNow('', true);
+        $dt = SensorDateTime::dateNow('', true);
         try {
-        $q = $qb->update(WeatherConfigurationEntity::class, 'c')
+        $q = $qb->update(SensorConfigurationEntity::class, 'c')
         ->set('c.configValue', $qb->expr()->literal($value))
         ->set('c.configDate', $qb->expr()->literal($dt))
         ->where('c.configKey = ?1')

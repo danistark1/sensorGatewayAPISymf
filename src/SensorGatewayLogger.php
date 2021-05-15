@@ -11,7 +11,7 @@ use Monolog\Logger;
  *
  * @package App
  */
-class WeatherStationLogger extends MonologDBHandler {
+class SensorGatewayLogger extends MonologDBHandler {
 
     /**
      * WeatherStationLogger constructor.
@@ -20,7 +20,7 @@ class WeatherStationLogger extends MonologDBHandler {
      * @param int $level
      * @param bool $bubble
      */
-    public function __construct(EntityManagerInterface $em, WeatherCacheHandler $cacheHandler, $level = Logger::API, $bubble = true) {
+    public function __construct(EntityManagerInterface $em, SensorCacheHandler $cacheHandler, $level = Logger::API, $bubble = true) {
         parent::__construct($em, $cacheHandler, $level, $bubble);
     }
 
