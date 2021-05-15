@@ -2,12 +2,15 @@
 namespace App\Controller;
 
 use App\Entity\SensorEntity;
-use App\Entity\WeatherLoggerEntity;
-use App\Entity\WeatherReportEntity;
+use App\Entity\SensorLoggerEntity;
+use App\Entity\SensorMoistureEntity;
+use App\Entity\SensorReportEntity;
+use App\MoistureSensorSchema;
+use App\Repository\SensorMoistureRepository;
 use App\StationPostSchema;
-use App\WeatherCacheHandler;
-use App\WeatherConfiguration;
-use App\WeatherStationLogger;
+use App\SensorCacheHandler;
+use App\SensorConfiguration;
+use App\SensorGatewayLogger;
 use App\Repository\SensorRepository;
 use DateInterval;
 use DateTime;
@@ -25,7 +28,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use DateTimeZone;
-use App\Utils\StationDateTime;
+use App\Utils\SensorDateTime;
 use App\Kernel;
 
 /**
@@ -66,7 +69,7 @@ class SensorController extends AbstractController  {
     private $sensorRepository;
 
     /**
-     * @var WeatherStationLogger
+     * @var SensorGatewayLogger
      */
     private $logger;
 
@@ -76,21 +79,21 @@ class SensorController extends AbstractController  {
     /** @var FilesystemAdapter  */
     private $cache;
 
-    /** @var WeatherCacheHandler  */
+    /** @var SensorCacheHandler  */
     private $configCache;
 
     /**
      * SensorController constructor.
      *
      * @param SensorRepository|null $sensorRepository
-     * @param WeatherStationLogger $logger
-     * @param WeatherCacheHandler $cacheHandler
+     * @param SensorGatewayLogger $logger
+     * @param SensorCacheHandler $cacheHandler
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function __construct(
         SensorRepository $sensorRepository,
-        WeatherStationLogger $logger,
-        WeatherCacheHandler $cacheHandler) {
+        SensorGatewayLogger $logger,
+        SensorCacheHandler $cacheHandler) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
         $this->request  = new Request();
@@ -321,6 +324,40 @@ class SensorController extends AbstractController  {
         return $valid;
     }
 
+
+
+    /**
+     * Post moisture readings.
+     *
+     * @Route("/sensorgateway/api/moisture",  methods={"POST"}, name="post_moisture_readings")
+     * @param Request $request
+     * @param int $interval Interval for sending moisture report emails.
+     * @return Response
+     * @throws Exception
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public function postMoisture(
+        Request $request,
+        ValidatorInterface $validator,
+        MoistureSensorSchema $moisturePostSchema,
+        SensorMoistureRepository $moistureRepo,
+        $interval = 2
+    ) {
+        $parameters = json_decode($request->getContent(), true);
+        $normalizedData = $this->normalizeData($parameters);
+        $violations = $validator->validate($parameters, $moisturePostSchema::$schema);
+        $valid = $this->validateRequest($violations);
+        if ($valid) {
+            $result = $moistureRepo->save($normalizedData);
+            if ($result) {
+                $this->response->setStatusCode(self::STATUS_OK);
+            } else {
+                $this->response->setStatusCode(self::STATUS_EXCEPTION);
+            }
+        }
+        return $this->response;
+    }
+
     /**
      * Post weatherData.
      *
@@ -360,13 +397,13 @@ class SensorController extends AbstractController  {
 
                 ];
                 $paramsReportData = [
-                    'tableName' => WeatherReportEntity::class,
+                    'tableName' => SensorReportEntity::class,
                     'dateTimeField' => 'lastSentDate',
                     'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
 
                 ];
                 $paramsLoggerData = [
-                    'tableName' => WeatherLoggerEntity::class,
+                    'tableName' => SensorLoggerEntity::class,
                     'dateTimeField' => 'insertDateTime',
                     'interval' => $this->configCache->getConfigKey('pruning-logs-interval') ?? 1,
                 ];
@@ -388,7 +425,7 @@ class SensorController extends AbstractController  {
      * @param array $parameters
      * @return array Normalized Data
      */
-    private function normalizeData(array $parameters): array {
+    private function normalizeData(array $parameters, $format = 'pascaleCase'): array {
         $normalizedData = [];
         foreach($parameters as $param => $value) {
             $normalizedData += [strtolower($param) => $value];

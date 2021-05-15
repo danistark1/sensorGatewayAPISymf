@@ -11,7 +11,7 @@ use DateTimeZone;
  *
  * @package App\Utils
  */
-class StationDateTime {
+class SensorDateTime {
 
     /**
      * Return date now with preset format/timezone

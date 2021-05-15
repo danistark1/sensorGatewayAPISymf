@@ -2,21 +2,21 @@
 
 namespace App\Repository;
 
-use App\Entity\WeatherLoggerEntity;
+use App\Entity\SensorLoggerEntity;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @method WeatherLoggerEntity|null find($id, $lockMode = null, $lockVersion = null)
- * @method WeatherLoggerEntity|null findOneBy(array $criteria, array $orderBy = null)
- * @method WeatherLoggerEntity[]    findAll()
- * @method WeatherLoggerEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method SensorLoggerEntity|null find($id, $lockMode = null, $lockVersion = null)
+ * @method SensorLoggerEntity|null findOneBy(array $criteria, array $orderBy = null)
+ * @method SensorLoggerEntity[]    findAll()
+ * @method SensorLoggerEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class WeatherLoggerRepository extends ServiceEntityRepository
+class SensorLoggerRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, WeatherLoggerEntity::class);
+        parent::__construct($registry, SensorLoggerEntity::class);
     }
 
     // /**

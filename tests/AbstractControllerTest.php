@@ -4,7 +4,7 @@
  */
 namespace App\Tests;
 
-use App\WeatherConfiguration;
+use App\SensorConfiguration;
 use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
 use Doctrine\Common\DataFixtures\Loader;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
@@ -35,7 +35,7 @@ class AbstractControllerTest extends WebTestCase
         if (self::$client === null) {
             self::$client = static::createClient();
         }
-        $weatherConfiguration = new WeatherConfiguration();
+        $weatherConfiguration = new SensorConfiguration();
 
         // Disable postListener.
         //TODO update when config set is added.

@@ -5,8 +5,8 @@
 namespace App\Repository;
 
 use App\Entity\SensorEntity;
-use App\Utils\StationDateTime;
-use App\WeatherStationLogger;
+use App\Utils\SensorDateTime;
+use App\SensorGatewayLogger;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
@@ -23,10 +23,10 @@ use Monolog\Logger;
  */
 class SensorRepository extends ServiceEntityRepository {
 
-    /** @var \App\WeatherStationLogger  */
+    /** @var \App\SensorGatewayLogger  */
     private $logger;
 
-    public function __construct(ManagerRegistry $registry, WeatherStationLogger $logger) {
+    public function __construct(ManagerRegistry $registry, SensorGatewayLogger $logger) {
         parent::__construct($registry, SensorEntity::class);
         $this->logger = $logger;
 
@@ -96,7 +96,7 @@ class SensorRepository extends ServiceEntityRepository {
         $roomGateway->setStationId($params['station_id']);
         $batteryStatus = $params['battery_status'] ?? null;
         $roomGateway->setBatteryStatus($batteryStatus);
-        $dt = StationDateTime::dateNow();
+        $dt = SensorDateTime::dateNow();
         $roomGateway->setInsertDateTime($dt);
         $result = true;
         // Get the entity manager, begin a transaction.
@@ -128,7 +128,7 @@ class SensorRepository extends ServiceEntityRepository {
 
         // By default we want to delete records that are older than 1 day.
         // Weather data is only needed for 24 hrs.
-        $date = StationDateTime::dateNow('P'.$params['interval'].'D');
+        $date = SensorDateTime::dateNow('P'.$params['interval'].'D');
         $results  = $qb->select('p')
             ->from($params['tableName'], 'p')
             ->where('p.'.$params['dateTimeField']. '<= :date_from')

@@ -1,13 +1,13 @@
 <?php
 
 namespace App\Logger;
-use App\Entity\WeatherLoggerEntity;
-use App\WeatherCacheHandler;
-use App\WeatherConfiguration;
+use App\Entity\SensorLoggerEntity;
+use App\SensorCacheHandler;
+use App\SensorConfiguration;
 use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
-use App\Utils\StationDateTime;
+use App\Utils\SensorDateTime;
 
 class MonologDBHandler extends AbstractProcessingHandler {
     /**
@@ -16,14 +16,14 @@ class MonologDBHandler extends AbstractProcessingHandler {
     protected $em;
 
     /**
-     * @var WeatherConfiguration
+     * @var SensorConfiguration
      */
     protected $config;
 
-    /** @var WeatherCacheHandler  */
+    /** @var SensorCacheHandler  */
     protected $configCache;
 
-    public function __construct(EntityManagerInterface $em, WeatherCacheHandler $configCache, $level = Logger::API, $bubble = true) {
+    public function __construct(EntityManagerInterface $em, SensorCacheHandler $configCache, $level = Logger::API, $bubble = true) {
         $this->em = $em;
         $this->configCache = $configCache;
         parent::__construct($level, $bubble);
@@ -46,11 +46,11 @@ class MonologDBHandler extends AbstractProcessingHandler {
 //            }
 
             try {
-                $logEntry = new WeatherLoggerEntity();
+                $logEntry = new SensorLoggerEntity();
                 $logEntry->setMessage($record['message']);
                 $logEntry->setLevel($record['level']);
                 $logEntry->setLevelName($record['level_name']);
-                $logDateTime = StationDateTime::dateNow();
+                $logDateTime = SensorDateTime::dateNow();
                 $logEntry->setInsertDateTime($logDateTime);
 
                 if (is_array($record['extra'])) {

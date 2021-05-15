@@ -3,9 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\SensorEntity;
-use App\Entity\WeatherReportEntity;
-use App\Utils\StationDateTime;
-use App\WeatherStationLogger;
+use App\Entity\SensorReportEntity;
+use App\Utils\SensorDateTime;
+use App\SensorGatewayLogger;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
@@ -15,24 +15,24 @@ use Doctrine\Persistence\Mapping\MappingException;
 use Monolog\Logger;
 
 /**
- * @method WeatherReportEntity|null find($id, $lockMode = null, $lockVersion = null)
- * @method WeatherReportEntity|null findOneBy(array $criteria, array $orderBy = null)
- * @method WeatherReportEntity[]    findAll()
- * @method WeatherReportEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method SensorReportEntity|null find($id, $lockMode = null, $lockVersion = null)
+ * @method SensorReportEntity|null findOneBy(array $criteria, array $orderBy = null)
+ * @method SensorReportEntity[]    findAll()
+ * @method SensorReportEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class WeatherReportRepository extends ServiceEntityRepository {
+class SensorReportRepository extends ServiceEntityRepository {
 
-    /** @var \App\WeatherStationLogger  */
+    /** @var \App\SensorGatewayLogger  */
     private $logger;
 
     /**
      * WeatherReportRepository constructor.
      *
      * @param \Doctrine\Persistence\ManagerRegistry $registry
-     * @param \App\WeatherStationLogger $logger
+     * @param \App\SensorGatewayLogger $logger
      */
-    public function __construct(ManagerRegistry $registry, WeatherStationLogger $logger) {
-        parent::__construct($registry, WeatherReportEntity::class);
+    public function __construct(ManagerRegistry $registry, SensorGatewayLogger $logger) {
+        parent::__construct($registry, SensorReportEntity::class);
         $this->logger = $logger;
 
     }
@@ -64,12 +64,12 @@ class WeatherReportRepository extends ServiceEntityRepository {
      */
     public function save(array $params) {
         $em = $this->getEntityManager();
-        $weatherEntity = new WeatherReportEntity();
+        $weatherEntity = new SensorReportEntity();
         $weatherEntity->setLastSentCounter($params['counter']);
         $weatherEntity->setEmailBody($params['emailBody']);
         $weatherEntity->setReportType($params['reportType']);
-        $weatherEntity->setLastSentDate(StationDateTime::dateNow('',false,'Y-m-d' ));
-        $weatherEntity->setLastSentTime(StationDateTime::dateNow('',false,'H:i:s' ));
+        $weatherEntity->setLastSentDate(SensorDateTime::dateNow('',false,'Y-m-d' ));
+        $weatherEntity->setLastSentTime(SensorDateTime::dateNow('',false,'H:i:s' ));
         $result = true;
         $em->getConnection()->beginTransaction();
 

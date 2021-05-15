@@ -10,7 +10,7 @@ use SplFileInfo;
  *
  * @package App
  */
-class WeatherConfiguration {
+class SensorConfiguration {
     /**
      * @var mixed
      */
