@@ -5,6 +5,7 @@
 namespace App\Listeners;
 
 use App\Entity\SensorEntity;
+use App\Entity\SensorMoistureEntity;
 use App\Entity\SensorReportEntity;
 use App\Repository\SensorReportRepository;
 use App\Utils\ArraysUtils;
@@ -50,15 +51,26 @@ class PostListener {
     // Time to send third notification report
     private const THIRD_NOTIFICATION_TIME = "22:00:00";
 
+
+    /**
+     * Notification type - notification moisture
+     */
+    private const REPORT_TYPE_NOTIFICATION_MOISTURE = 'notification_moisture';
+
+    /**
+     * Notification type - report moisture
+     */
+    private const REPORT_TYPE_REPORT_MOISTURE = 'report_moisture';
+
     /**
      * Notification type - notification
      */
-    private const REPORT_TYPE_NOTIFICATION = 'notification';
+    private const REPORT_TYPE_NOTIFICATION = 'notification_weather';
 
     /**
      * Notification type - report
      */
-    private const REPORT_TYPE_REPORT = 'report';
+    private const REPORT_TYPE_REPORT = 'report_weather';
 
     /**
      * @var Environment
@@ -119,23 +131,48 @@ class PostListener {
     public function postPersist(LifecycleEventArgs $args) {
         $this->entityManager = $args->getObjectManager();
         $postInstance = $args->getEntity();
-        if (!$postInstance instanceof SensorEntity) {
+        if ((!$postInstance instanceof SensorEntity) && (!$postInstance instanceof SensorMoistureEntity)) {
             return;
         }
         $reportEnabled = $this->configCache->isConfigSetKey('weatherReport-readingReportEnabled');
         $notificationsReportEnabled = $this->configCache->isConfigSetKey('weatherReport-notificationsReportEnabled');
 
+        // TODO Moisture Report
+        $moistureReportEnabled = $this->configCache->isConfigSetKey('sensorReport-moistureReportEnabled');
+        $moistureNotificationsEnabled = $this->configCache->isConfigSetKey('sensorReport-moistureNotificationsEnabled');
+        if ($moistureNotificationsEnabled && $postInstance instanceof SensorMoistureEntity) {
+            // Last Sent Notifications moisture Report
+            $lastSentNotificationMoisture = $this->getLastSentReport(self::REPORT_TYPE_NOTIFICATION_MOISTURE);
+            // Check if notification report needs to be sent.
+            $notificationsMoistureCounter = $this->shouldSendReportTime($lastSentNotificationMoisture, self::REPORT_TYPE_NOTIFICATION_MOISTURE);
+            $moistureEntity = $this->shouldSendReportValues($postInstance);
+            /** SensorMoistureEntity  $postInstance */
+            if ($moistureEntity !== '' && $notificationsMoistureCounter && $notificationsMoistureCounter !== 0 && !empty($postInstance->getSensorReading())) {
+                try {
+                    $result = $this->sendReport(
+                        $moistureEntity,
+                        '/sensor/moistureReportNotifications.html.twig',
+                        $moistureEntity['emailTitle']);
+                    if (!empty($result)) {
+                        $this->updateWeatherReport(self::REPORT_TYPE_NOTIFICATION_MOISTURE, $notificationsMoistureCounter, $result);
+                    }
+
+                } catch (TransportExceptionInterface | LoaderError | RuntimeError | SyntaxError $e) {
+                    $this->logger->log($e->getMessage(), ['sender' => __FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
+                }
+            }
+        }
         // only act on "Sensor" entity
         if ($reportEnabled || $notificationsReportEnabled) {
             /// Get latest Sensor Readings.
-            $latestSensorData = $this->getLatestSensorData();
+            $latestSensorData = $this->getLatestWeatherSensorData();
             // Prepare notifications report
             $latestNotificationsData = $this->prepareNotifications($latestSensorData);
 
             // Last Sent Notifications Report
             $lastSentNotificationReport = $this->getLastSentReport(self::REPORT_NOTIFICATIONS);
             // Check if notification report needs to be sent.
-            $notificationsCounter = $this->shouldSendReport($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
+            $notificationsCounter = $this->shouldSendReportTime($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
             if ($notificationsCounter && $notificationsCounter !== 0 && $notificationsReportEnabled && !empty($latestNotificationsData)) {
                 try {
                     $result = $this->sendReport(
@@ -155,7 +192,7 @@ class PostListener {
             $lastSentDailyReport = $this->getLastSentReport(self::REPORT_DAILY);
 
             // Check if daily report needs to be sent.
-            $reportCounter = $this->shouldSendReport($lastSentDailyReport, self::REPORT_TYPE_REPORT);
+            $reportCounter = $this->shouldSendReportTime($lastSentDailyReport, self::REPORT_TYPE_REPORT);
             if ($reportCounter && $reportCounter !== 0 && $reportEnabled && !empty($latestSensorData)) {
                 try {
                     $result = $this->sendReport(
@@ -173,6 +210,45 @@ class PostListener {
     }
 
     /**
+     * Check if a moisture report will need to be sent.
+     *
+     * @param $postInstance
+     * @return array|string
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function shouldSendReportValues($postInstance) {
+        $title = '';
+        /** SensorMoistureEntity $reportType */
+        $sensorID = $postInstance->getSensorID();
+        if ($sensorID) {
+            $sensorUpperThreshold = $this->configCache->getConfigKey("sensor-$sensorID-upper-moisture");
+            $sensorLowerThreshold = $this->configCache->getConfigKey("sensor-$sensorID-lower-moisture");
+            $currentReading = $postInstance->getSensorReading();
+            $name = $postInstance->getName();
+            if ($currentReading >= $sensorUpperThreshold) {
+                $title = "Your $name is soaked!";
+                $event = "Upper moisture threshold reached.";
+            } elseif ($currentReading <= $sensorLowerThreshold) {
+                $title = "You should water your $name, its feeling thirsty!";
+                $event = "Lower moisture threshold reached.";
+            }
+        }
+        if (!empty($title)) {
+            // Construct notification event.
+            $msg = [
+                'sensorID' => $sensorID,
+                'name' => $postInstance->getName(),
+                'event' => $event,
+                'reading' => $postInstance->getSensorReading(),
+                'location' => $postInstance->getSensorLocation(),
+                'emailTitle' => $title
+            ];
+        }
+        return $msg;
+        // Get all configured sensor thresholds by type and decide if a report should be send.
+    }
+
+    /**
      * Check if  a report needs to be sent. (Notifications or Daily)
      *
      * @param $lastSentDailyReport
@@ -181,15 +257,20 @@ class PostListener {
      * @throws \Exception
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function shouldSendReport(array $lastSentDailyReport, string $reportType = '') {
+    private function shouldSendReportTime(array $lastSentDailyReport, string $reportType = '') {
         $counterUpdate = 0;
-        $firstNotificationTime = $this->configCache->getConfigKey('weatherReport-firstNotificationTime');
-        $firstReportTime = $this->configCache->getConfigKey('weatherReport-firstReportTime');
-        $secondNotificationTime = $this->configCache->getConfigKey('weatherReport-secondNotificationTime');
-        $secondReportTime = $this->configCache->getConfigKey('weatherReport-secondReportTime');
-        $firstReport = $reportType === 'notification' ? ($firstNotificationTime ?? self::FIRST_NOTIFICATION_TIME) : ($firstReportTime ?? self::FIRST_REPORT_TIME);
-        $secondReport = $reportType === 'notification' ? ($secondNotificationTime ?? self::SECOND_NOTIFICATION_TIME) : ($secondReportTime ?? self::SECOND_REPORT_TIME);
+        $firstNotificationTime = $this->configCache->getConfigKey("$reportType-firstNotificationTime");
+        $firstReportTime = $this->configCache->getConfigKey("$reportType-firstReportTime");
+        $secondNotificationTime = $this->configCache->getConfigKey("$reportType-secondNotificationTime");
+        $secondReportTime = $this->configCache->getConfigKey("$reportType-secondReportTime");
 
+        if (str_contains('notification', $reportType)) {
+            $firstReport = $firstNotificationTime ?? self::FIRST_NOTIFICATION_TIME;
+            $secondReport = $secondNotificationTime ??  self::SECOND_NOTIFICATION_TIME;
+        } else {
+            $firstReport = $firstReportTime ?? self::FIRST_REPORT_TIME;
+            $secondReport = $secondReportTime ?? self::SECOND_REPORT_TIME;
+        }
         $currentTime = SensorDateTime::dateNow('', true, 'H:i:s');
         /** @var SensorReportEntity $lastSentDailyReport */
         $lastReportLastCounter = isset($lastSentDailyReport[0]) ? $lastSentDailyReport[0]->getLastSentCounter() : 0;
@@ -215,12 +296,15 @@ class PostListener {
         return $counterUpdate;
     }
 
+    private function getLatestMoistureSensorData() {
+
+    }
     /**
      * Get latest sensor readings.
      *
      * @return array[]
      */
-    private function getLatestSensorData(): array {
+    private function getLatestWeatherSensorData(): array {
         // Construct station IDs array.
         $stationSensorConfigs = $this->configCache->getSensorConfigs();
        // return $stationSensorConfigs;
@@ -276,6 +360,11 @@ class PostListener {
         return $reportDataDb;
     }
 
+
+    private function prepareMoistureNotifications(array $latestSensorData) {
+
+    }
+
     /**
      * Prepare notifications data.
      *
@@ -306,7 +395,7 @@ class PostListener {
                 $thresholdHumidUpper = true;
                 $notificationsEmailData[$key]['humidity']['upper'] = 'Upper Humidity Threshold Reached ';
                 $notificationsEmailData[$key]['humidity']['value'] =  $massagedData[$key]['humidity'];
-            }elseif($massagedData[$key]['humidity'] <=  $this->configCache->getConfigKey('sensor-'.$key.'-'.'lower-humidity')) {
+            } elseif($massagedData[$key]['humidity'] <=  $this->configCache->getConfigKey('sensor-'.$key.'-'.'lower-humidity')) {
                 $thresholdHumidLower = true;
                 $notificationsEmailData[$key]['humidity']['lower'] = 'Lower Humidity Threshold Reached ';
                 $notificationsEmailData[$key]['humidity']['value'] = $massagedData[$key]['humidity'];
@@ -314,7 +403,7 @@ class PostListener {
         }
         if ($thresholdTempUpper || $thresholdTempLower || $thresholdHumidUpper || $thresholdHumidLower) {
             $notificationsEmailData = ['notificationsData' => $notificationsEmailData];
-        }else {
+        } else {
             $notificationsEmailData = [];
         }
 
@@ -358,7 +447,7 @@ class PostListener {
             return $emailData;
         }
         //return true;
-        if (!empty($sensorData) && !$this->configCache->getConfigKey('weatherReport-disableEmails')) {
+    //    if (!empty($sensorData) && !$this->configCache->getConfigKey('weatherReport-disableEmails')) {
             $emailData = [
                 'from' => $fromEmail,
                 'to' => $toEmail,
@@ -369,6 +458,7 @@ class PostListener {
                 ->from($fromEmail)
                 ->to($toEmail)
                 ->subject($emailTitle)
+          //      ->text("this is a test")
                 ->html(
                     $this->templating->render(
                         $twigEmail,
@@ -391,7 +481,7 @@ class PostListener {
                 );
 
             }
-        }
+  //      }
         return $emailData;
     }
 
