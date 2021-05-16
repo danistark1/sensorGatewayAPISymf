@@ -493,7 +493,7 @@ class PostListener {
         try {
             //$lastSent = $this->getLastSentReport($reportType);
             //$notificationsCounter = $this->shouldSendReport($lastSent, $reportType);
-            $this->logger->log('updateWeatherReport',['updateWeatherReportCounter' => $notificationsCounter], Logger::INFO);
+            //$this->logger->log('updateWeatherReport',['updateWeatherReportCounter' => $notificationsCounter], Logger::INFO);
 
             $this->weatherReportRepository->save(
                 [
