@@ -446,8 +446,7 @@ class PostListener {
             $this->logger->log('Invalid Emails.', ['sender' => __CLASS__.__FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
             return $emailData;
         }
-        //return true;
-    //    if (!empty($sensorData) && !$this->configCache->getConfigKey('weatherReport-disableEmails')) {
+        if (!empty($sensorData) && !$this->configCache->getConfigKey('weatherReport-disableEmails')) {
             $emailData = [
                 'from' => $fromEmail,
                 'to' => $toEmail,
@@ -458,7 +457,6 @@ class PostListener {
                 ->from($fromEmail)
                 ->to($toEmail)
                 ->subject($emailTitle)
-          //      ->text("this is a test")
                 ->html(
                     $this->templating->render(
                         $twigEmail,
@@ -481,7 +479,7 @@ class PostListener {
                 );
 
             }
-  //      }
+        }
         return $emailData;
     }
 
