@@ -45,12 +45,13 @@ class SensorCacheHandler {
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getConfigKey(string $lookupKey) {
+        //$this->clearCache();
         $value = $this->cache->get('cache_'.$lookupKey, function (ItemInterface $item) use ($lookupKey) {
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 365 days.
             $weatherConfigRepo = new SensorConfigurationRepository($this->managerRegistry);
             if ($lookupKey !== '') {
-                $dbValue =  $weatherConfigRepo->findBy(['configKey' => $lookupKey],[], 1);
+                $dbValue =  $weatherConfigRepo->findBy(['configKey' => $lookupKey], [], 1);
             } else {
                 $this->cache->delete('cache_'.$lookupKey);
             }

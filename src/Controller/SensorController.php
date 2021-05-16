@@ -340,8 +340,7 @@ class SensorController extends AbstractController  {
         Request $request,
         ValidatorInterface $validator,
         MoistureSensorSchema $moisturePostSchema,
-        SensorMoistureRepository $moistureRepo,
-        $interval = 2
+        SensorMoistureRepository $moistureRepo
     ) {
         $parameters = json_decode($request->getContent(), true);
         $normalizedData = $this->normalizeData($parameters);
@@ -351,6 +350,13 @@ class SensorController extends AbstractController  {
             $result = $moistureRepo->save($normalizedData);
             if ($result) {
                 $this->response->setStatusCode(self::STATUS_OK);
+                $paramsMoistureData = [
+                    'tableName' => SensorMoistureEntity::class,
+                    'dateTimeField' => 'insertDateTime',
+                    'interval' => $this->configCache->getConfigKey('pruning-moisture-interval') ?? 1,
+                ];
+                // Data pruning.
+                $moistureRepo->delete($paramsMoistureData);
             } else {
                 $this->response->setStatusCode(self::STATUS_EXCEPTION);
             }

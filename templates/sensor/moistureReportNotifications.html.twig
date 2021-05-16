@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {% block stylesheets %}
+        <style>{{ source('sensor/styleNotifications.css') }}</style>
+    {% endblock %}
+</head>
+<body>
+{% block body %}
+<h3>Notifications Report </h3>
+
+<table id="weatherData" class="fl-table">
+    <thead>
+    <tr>
+        <th>Sensor</th>
+        <th>Event</th>
+        <th>Value</th>
+    </tr>
+    </thead>
+    <tbody>
+{#    {% for sensorID, name, reading, location in notificationsData%}#}
+<tr>
+    {% if reading is defined %}
+        <td>{{ sensorID }}</td>
+        <td>{{ event }}</td>
+        <td>{{ reading }}</td>
+{#    {% if 'lower' in sensorData['temperature']|keys %}#}
+{#        <td>{{ sensorData['temperature']['lower']|e }}</td>#}
+{#        <td>{{ sensorData['temperature']['value']|e }}</td>#}
+{#    {% else %}#}
+{#        <td>{{ sensorData['temperature']['upper']|e }}</td>#}
+{#        <td>{{ sensorData['temperature']['value']|e }}</td>#}
+{#    {% endif %}#}
+    {% endif %}
+</tr>
+{#        <tr>#}
+
+
+{#            {% if sensorData.humidity is defined %}#}
+{#                <td>{{ room }}</td>#}
+{#            {% if 'lower' in sensorData['humidity']|keys %}#}
+{#                <td>{{ sensorData['humidity']['lower']|e }}</td>#}
+{#                <td>{{ sensorData['humidity']['value']|e }}</td>#}
+{#            {% else %}#}
+{#                <td>{{ sensorData['humidity']['upper']|e }}</td>#}
+{#                <td>{{ sensorData['humidity']['value']|e }}</td>#}
+{#            {% endif %}#}
+{#            {% endif %}#}
+{#        </tr>#}
+{#    {% endfor %}#}
+</table>
+</body>
+{% endblock %}
+</html>

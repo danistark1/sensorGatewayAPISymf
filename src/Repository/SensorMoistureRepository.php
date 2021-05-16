@@ -24,6 +24,33 @@ class SensorMoistureRepository extends ServiceEntityRepository
         parent::__construct($registry, SensorMoistureEntity::class);
     }
 
+    /**
+     * Moisture Sensor pruning.
+     *
+     * @param array $params
+     * @throws ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function delete(array $params) {
+        $em = $this->getEntityManager();
+        $qb = $em->createQueryBuilder();
+
+        // By default we want to delete records that are older than 1 day.
+        $date = SensorDateTime::dateNow('P'.$params['interval'].'D');
+        $results  = $qb->select('p')
+            ->from(SensorMoistureEntity::class, 'p')
+            ->where('p.'.$params['dateTimeField']. '<= :insertDateTime')
+            ->setParameter('insertDateTime', $date)
+            ->getQuery()
+            ->execute();
+
+        if (!empty($results)) {
+            foreach ($results as $result) {
+                $em->remove($result);
+                $em->flush();
+            }
+        }
+    }
 
     /**
      * Save Sensor record to the database.
