@@ -235,7 +235,7 @@ class PostListener {
             }
         }
         $msg = [];
-        if (!empty($title)) {
+        if ($title !== '') {
             // Construct notification event.
             $msg = [
                 'sensorID' => $sensorID,
