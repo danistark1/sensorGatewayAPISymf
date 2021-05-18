@@ -148,12 +148,12 @@ class PostListener {
             $notificationsMoistureCounter = $this->shouldSendReportTime($lastSentNotificationMoisture, self::REPORT_TYPE_NOTIFICATION_MOISTURE);
             $moistureEntity = $this->shouldSendReportValues($postInstance);
             /** SensorMoistureEntity  $postInstance */
-            if ($moistureEntity !== '' && $notificationsMoistureCounter && $notificationsMoistureCounter !== 0 && !empty($postInstance->getSensorReading())) {
+            if (!empty($moistureEntity)  && $notificationsMoistureCounter && $notificationsMoistureCounter !== 0 && !empty($postInstance->getSensorReading())) {
                 try {
                     $result = $this->sendReport(
                         $moistureEntity,
                         '/sensor/moistureReportNotifications.html.twig',
-                        $moistureEntity['emailTitle']);
+                        $moistureEntity['emailTitle'] ?? 'Moisture notifications');
                     if (!empty($result)) {
                         $this->updateWeatherReport(self::REPORT_TYPE_NOTIFICATION_MOISTURE, $notificationsMoistureCounter, $result);
                     }
