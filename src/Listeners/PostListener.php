@@ -18,6 +18,7 @@ use Doctrine\ORM\ORMException;
 use Monolog\Logger;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use App\Utils\SensorDateTime;
 use Twig\Environment;
@@ -233,6 +234,7 @@ class PostListener {
                 $event = "Lower moisture threshold reached.";
             }
         }
+        $msg = [];
         if (!empty($title)) {
             // Construct notification event.
             $msg = [
@@ -437,11 +439,13 @@ class PostListener {
         $emailData = [];
         $fromEmail = $this->configCache->getConfigKey('weatherReport-fromEmail');
         $toEmail = $this->configCache->getConfigKey('weatherReport-toEmail');
+
         $emailsArray = [
             'from' =>  $fromEmail,
             'to' => $toEmail
         ];
-        $valid = ArraysUtils::validateEmails(($emailsArray));
+        //$emails = explode(',' , $toEmail);
+        $valid = ArraysUtils::validateEmails(($toEmail));
         if (!$valid) {
             $this->logger->log('Invalid Emails.', ['sender' => __CLASS__.__FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
             return $emailData;
