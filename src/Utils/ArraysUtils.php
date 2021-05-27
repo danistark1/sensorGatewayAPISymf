@@ -10,16 +10,13 @@ class ArraysUtils {
     /**
      * Validate Emails.
      *
-     * @param array $emailsArray
+     * @param string $emails
      * @return bool
      */
-    public static function validateEmails(array $emailsArray): bool {
+    public static function validateEmails(string $email): bool {
         $valid = true;
-        foreach($emailsArray as $key => $value) {
-            if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $valid = false;
-                break;
-            }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $valid = false;
         }
         return $valid;
     }

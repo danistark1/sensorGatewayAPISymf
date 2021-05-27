@@ -444,8 +444,7 @@ class PostListener {
             'from' =>  $fromEmail,
             'to' => $toEmail
         ];
-        //$emails = explode(',' , $toEmail);
-        $valid = ArraysUtils::validateEmails(($toEmail));
+        $valid = ArraysUtils::validateEmails($toEmail);
         if (!$valid) {
             $this->logger->log('Invalid Emails.', ['sender' => __CLASS__.__FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
             return $emailData;
