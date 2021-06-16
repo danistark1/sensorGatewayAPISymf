@@ -131,6 +131,6 @@ class SensorMoistureEntity
      * @return string[]
      */
     public static function getValidSensorIDs(): array {
-        return ['00e122', '00df09', '00e232'];
+        return ['11790', '24269', '20459'];
     }
 }
