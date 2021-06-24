@@ -164,7 +164,7 @@ class PostListener {
             }
         }
         // only act on "Sensor" entity
-        if ($reportEnabled || $notificationsReportEnabled) {
+        if (($reportEnabled || $notificationsReportEnabled) && $postInstance instanceof SensorEntity) {
             /// Get latest Sensor Readings.
             $latestSensorData = $this->getLatestWeatherSensorData();
             // Prepare notifications report
