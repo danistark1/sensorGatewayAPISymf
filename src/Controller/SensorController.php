@@ -355,8 +355,15 @@ class SensorController extends AbstractController  {
                     'dateTimeField' => 'insertDateTime',
                     'interval' => $this->configCache->getConfigKey('pruning-moisture-interval') ?? 1,
                 ];
+                $paramsReportData = [
+                    'tableName' => SensorReportEntity::class,
+                    'dateTimeField' => 'lastSentDate',
+                    'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
+
+                ];
                 // Data pruning.
                 $moistureRepo->delete($paramsMoistureData);
+                $this->sensorRepository->delete($paramsReportData);
             } else {
                 $this->response->setStatusCode(self::STATUS_EXCEPTION);
             }
