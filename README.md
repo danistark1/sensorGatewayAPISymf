@@ -34,20 +34,33 @@ MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 ```
 (weatherConfiguration table
 
-| Config Key  | Value |
-| ------------- | ------------- |
-| weatherReport-readingReportEnabled  | 1  |
-| weatherReport-notificationsReportEnabled  | 1  |
-| weatherReport-fromEmail  |   |
-| weatherReport-toEmail |   |
-| weatherReport-emailTitleDailyReport  | Weather Station Report |
-| weatherReport-emailTitleNotifications | Weather Station notifications |
-| weatherReport-firstReportTime  | 07:00:00  |
-| weatherReport-secondReportTime  | 18:00:00  |
-| weatherReport-firstNotificationTime  | 06:00:00  |
-| weatherReport-secondNotificationTime  | 17:00:00  |
-| weatherReport-thirdNotificationTime  | 18:00:00 |
-| weatherReport-disableEmails  | 0  |
+| Config Key  | Value | Function |
+| ------------- | ------------- | ------------- |
+| weatherReport-readingReportEnabled  | 1  | Temp/Humidity report enabled/disabled |
+| weatherReport-notificationsReportEnabled  | 1  | Temp/Humidity notifications enabled/disabled  |
+| weatherReport-fromEmail  |  fromEmail | Email to use for sending notifications|
+| weatherReport-toEmail |   | Email to send notifications to| 
+| weatherReport-emailTitleDailyReport  | Weather Station Report | Title of report email that will be recieved |
+| weatherReport-emailTitleNotifications | Weather Station notifications | Title of notifications email that will be recieved |
+| weatherReport-firstReportTime  | 07:00:00  | First report time |
+| weatherReport-secondReportTime  | 18:00:00  |  Second report time |
+| weatherReport-firstNotificationTime  | 06:00:00  | Third report time (not implmeneted yet) |
+| weatherReport-secondNotificationTime  | 17:00:00  | First notifications time |
+| weatherReport-thirdNotificationTime  | 18:00:00 | Second notifications time|
+| weatherReport-disableEmails  | 0  | When set to 1, no email will be set, used when debugging|
+| sensor-{sensorName}-upper-temperature | 34 | Used to set upper temp threshold for a certain sensor |
+| sensor-{sensorName}-lower-temperature | in Celcius  | ------------- |
+| sensor-{sensorName}-upper-humidity | 0  | ------------- |
+| sensor-{sensorName}-lower-humidity | %  | ------------- |
+| sensor-{sensorName}-lower-moisture | (0 to 100) | ------------- |
+| sensor-{sensorName}-upper-moisture | 0  | ------------- |
+|application-timezone|America/Toronto  | Application server timezone |
+|application-debug| 0  | when set to one, log table will record application errors |
+|application-version|2.0  | Sets the application version |
+|pruning-records-interval| 1   | Sensors data pruning|
+|pruning-logs-interval| 1  |  Log data pruning|
+|pruning-moisture-interval| 1  |  Mositure data pruning|
+
 
 
 
@@ -118,6 +131,8 @@ Configration GETs are all cached. If a new config is added, cache gets cleated, 
 
 **SensorController**
 
+### Temp/Humidity
+
 **GET**
 
 **Get readings by Station ID**
@@ -141,6 +156,17 @@ Configration GETs are all cached. If a new config is added, cache gets cleated, 
 **Post sensor readings**
 
 - POST weatherstationapi/
+- 
+```json
+    {
+        id: m,
+        temperature: ,
+        battery_status: ,
+        humidity: ,
+        room: 'sensorName',
+        station_id: 6126
+    }
+```
 
 **Expected post**
 
@@ -158,6 +184,27 @@ Configration GETs are all cached. If a new config is added, cache gets cleated, 
 - DELETE weatherstationapi/{interval}
 
 Deletes all weather data older than interval (default is 1 day).
+
+### Moisture
+
+**POST**
+
+ - POST /weatherstation/api
+
+```json
+    {
+        name: 'sensorName',
+        batteryStatus: ,
+        sensorReading: ,
+        sensorID: ,
+        sensorLocation: 'sensorLocation'
+    }
+```
+
+### Cache
+
+- DELETE /weatherstation/api/config/deletecache
+
 
 **ConfigurationController**
 
