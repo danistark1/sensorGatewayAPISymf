@@ -13,7 +13,7 @@ Symfony REST APIs for the WirelessSensorGateway project https://github.com/danis
  - [Debugging](#debugging "Debugging")
  - [Pruning](#pruning "Pruning")
  - [Caching](#caching "Caching")
- - [REST API Calls](#rest-api-calls "REST API Calls")
+ - [REST API Endpoints](#rest-api-endpoints "REST API Endpoints")
  - [UnitTests](#unittests "UnitTests")
 
 # Setup
@@ -131,7 +131,7 @@ Everytime a new record is added, report, logging, sensor & moisture readings dat
 
 Configration GETs are all cached. If a new config is added, cache gets cleated, if an already existing config is updated, cache key of that config is deleted.
 
-# REST API Calls
+# REST API Endpoints
 
 **SensorController**
 
