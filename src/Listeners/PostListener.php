@@ -37,6 +37,11 @@ class PostListener {
     // Notifications title
     private const REPORT_NOTIFICATIONS = 'Notifications Report';
 
+    /**
+     * Notification type - notification moisture
+     */
+    private const REPORT_TYPE_NOTIFICATION_MOISTURE = 'Notifications Moisture';
+
     // Time to send first weather report
     private const FIRST_REPORT_TIME = "07:00:00";
 
@@ -52,26 +57,20 @@ class PostListener {
     // Time to send third notification report
     private const THIRD_NOTIFICATION_TIME = "22:00:00";
 
-
-    /**
-     * Notification type - notification moisture
-     */
-    private const REPORT_TYPE_NOTIFICATION_MOISTURE = 'notification_moisture';
-
     /**
      * Notification type - report moisture
      */
-    private const REPORT_TYPE_REPORT_MOISTURE = 'report_moisture';
+    private const REPORT_TYPE_REPORT_MOISTURE = 'Report Moisture';
 
     /**
      * Notification type - notification
      */
-    private const REPORT_TYPE_NOTIFICATION = 'notification_weather';
+    private const REPORT_TYPE_NOTIFICATION = 'Notifications Weather';
 
     /**
      * Notification type - report
      */
-    private const REPORT_TYPE_REPORT = 'report_weather';
+    private const REPORT_TYPE_REPORT = 'Report Weather';
 
     /**
      * @var Environment
