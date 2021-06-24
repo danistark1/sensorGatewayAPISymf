@@ -118,13 +118,14 @@ My ex.
 
 # Pruning
 
-Everytime a new record is added, report, logging & sensor readings data will be pruned based on the below configured intervals.
+Everytime a new record is added, report, logging, sensor & moisture readings data will be pruned based on the below configured intervals.
 
 | Config Key  | Value |
 | ------------- | ------------- |
 | pruning-report-interval | 1|
 | pruning-records-interval | 1|
 | pruning-logs-interval | 1|
+| pruning-moisture-interval | 1|
 
 # Caching
 
