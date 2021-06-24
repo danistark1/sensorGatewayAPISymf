@@ -27,6 +27,9 @@ Symfony REST APIs for the WirelessSensorGateway project https://github.com/danis
 DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 3306)/weatherStation
 
  **Configuration (For sensor readings report)**
+ 
+ MySQL Config in 
+ https://github.com/danistark1/wirelessSensorGatewayAPI/blob/main/config
 
 ```
 (env file)
@@ -159,12 +162,12 @@ Configration GETs are all cached. If a new config is added, cache gets cleated, 
 - 
 ```json
     {
-        id: m,
-        temperature: ,
-        battery_status: ,
-        humidity: ,
-        room: 'sensorName',
-        station_id: 6126
+        "id": "",
+        "temperature": ,
+        "battery_status": ,
+        "humidity": ,
+        "room": "sensorName",
+        "station_id": 6126
     }
 ```
 
@@ -193,11 +196,11 @@ Deletes all weather data older than interval (default is 1 day).
 
 ```json
     {
-        name: 'sensorName',
-        batteryStatus: ,
-        sensorReading: ,
-        sensorID: ,
-        sensorLocation: 'sensorLocation'
+        "name": "sensorName",
+        "batteryStatus": "",
+        "sensorReading": "",
+        "sensorID": "",
+        "sensorLocation": "sensorLocation"
     }
 ```
 
