@@ -8,7 +8,7 @@
 
 Symfony REST APIs for the WirelessSensorGateway project https://github.com/danistark1/wirelessSensorGateway
 
-## Table of contents ##
+## 💢 Table of Contents ##
  - [Setup](#setup "Setup")
  - [Debugging](#debugging "Debugging")
  - [Pruning](#pruning "Pruning")
