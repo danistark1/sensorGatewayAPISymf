@@ -17,7 +17,7 @@ Symfony REST APIs for the WirelessSensorGateway project https://github.com/danis
  - [REST API Endpoints](#rest-api-endpoints "REST API Endpoints")
  - [UnitTests](#unittests "UnitTests")
 
-# ⚙️ Setup
+# Setup
 
 - composer install
 - bin/console doctrine:database:create
@@ -107,14 +107,14 @@ My ex.
 | sensor-config-basement  | 3026  |
 | sensor-config-outside  | 12154  |
 
-# 🐞 Debugging
+# Debugging
 
 
 | Config Key  | Value |
 | ------------- | ------------- |
 | application-debug | 1|
 
-# 🗡️ Pruning
+# Pruning
 
 Everytime a new record is added, report, logging, sensor & moisture readings data will be pruned based on the below configured intervals.
 
