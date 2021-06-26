@@ -17,7 +17,7 @@ Symfony REST APIs for the WirelessSensorGateway project https://github.com/danis
  - [REST API Endpoints](#rest-api-endpoints "REST API Endpoints")
  - [UnitTests](#unittests "UnitTests")
 
-# Setup
+# ⚙️ Setup
 
 - composer install
 - bin/console doctrine:database:create
@@ -66,8 +66,6 @@ MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 |pruning-moisture-interval| 1  |  Mositure data pruning|
 
 
-
-
 ![Weather Report](https://github.com/danistark1/weatherStationApiSymfony/blob/main/sampleEmail.png)
 
 Readings from all configured sensors is sent in an email, twice a day (by default 07:00 AM and 08:00 PM, and can be configred using firstNotificationTime & secondReportTime).
@@ -109,7 +107,7 @@ My ex.
 | sensor-config-basement  | 3026  |
 | sensor-config-outside  | 12154  |
 
-# Debugging
+# 🐞 Debugging
 
 
 | Config Key  | Value |
@@ -117,7 +115,7 @@ My ex.
 | application-debug | 1|
 
 
-# Pruning
+# 🗡️ Pruning
 
 Everytime a new record is added, report, logging, sensor & moisture readings data will be pruned based on the below configured intervals.
 
