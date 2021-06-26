@@ -5,7 +5,7 @@
     <img src="https://github.com/danistark1/weatherStationApiSymfony/blob/main/animatedCloud.gif" />
 </p>
 
-  ## 📔 What is it? ##
+## 📔 What is it? ##
 
 Symfony REST APIs for the WirelessSensorGateway project https://github.com/danistark1/wirelessSensorGateway
 
@@ -113,7 +113,6 @@ My ex.
 | Config Key  | Value |
 | ------------- | ------------- |
 | application-debug | 1|
-
 
 # 🗡️ Pruning
 
