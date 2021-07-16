@@ -7,7 +7,7 @@
 
 ## 📔 What is it? ##
 
-Symfony API for the WirelessSensorGateway project https://github.com/danistark1/wirelessSensorGateway
+APIs for WirelessSensorGateway project https://github.com/danistark1/wirelessSensorGateway
 
 ## 💢 Table of Contents ##
  - [Setup](#setup "Setup")
