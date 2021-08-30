@@ -114,6 +114,8 @@ My ex.
 | ------------- | ------------- |
 | application-debug | 1|
 
+When set to 1, any app error will be record in SensorLogger database table.
+
 # Pruning
 
 Everytime a new record is added, report, logging, sensor & moisture readings data will be pruned based on the below configured intervals.
@@ -125,9 +127,14 @@ Everytime a new record is added, report, logging, sensor & moisture readings dat
 | pruning-logs-interval | 1|
 | pruning-moisture-interval | 1|
 
+ex. pruning-records-interval records are kept for 1 day, every new record after this will be deleted starting with the oldest.
+
 # Caching
 
-Configration GETs are all cached. If a new config is added, cache gets cleated, if an already existing config is updated, cache key of that config is deleted.
+All configrations are cached. If a new config is added, cache gets cleared, if an already existing config is updated, cache key of that config is deleted.
+You can however, reset all cache at once using the api 
+
+DELETE /weatherstation/api/config/deletecache
 
 # API Endpoints
 
@@ -235,7 +242,7 @@ Everytime a record is posted:
 - Deletes previous sensor readings reports
 https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L209
 
-### UnitTests
+### UnitTests (outdated)
 
 | Test  | Tests | Result |
 | ------------- | ------------- |------------- |
