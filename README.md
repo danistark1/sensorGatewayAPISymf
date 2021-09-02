@@ -250,7 +250,7 @@ https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660
 | ![testvalidSensorControllerGetByName](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/tests/SensorControllerTests.php#L56)  | ![SensorController::getByName()](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/src/Controller/SensorController.php#L82)  | 200|
 | ![testInvalidSensorControllerGetByName](https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660769b4758c96557e65768/tests/SensorControllerTests.php#L69)  | SensorController::getByName()  | 400|
 
-** ☑️ ToDo Tests**
+**☑️ ToDo Tests**
 
 - SensorController::Delete()
 - SensorController::Post()
