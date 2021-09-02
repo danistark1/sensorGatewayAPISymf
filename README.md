@@ -36,7 +36,6 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 (env file)
 MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 ```
-(weatherConfiguration table
 
 | Config Key  | Value | Function |
 | ------------- | ------------- | ------------- |
