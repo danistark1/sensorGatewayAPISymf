@@ -1,3 +1,5 @@
+[![forthebadge](https://forthebadge.com/images/badges/open-source.svg)](https://forthebadge.com)
+
 <p align="center">
     <b> 🌧 WirelessSensorGatewayAPI 🌧</b>
 </p>
@@ -259,5 +261,3 @@ https://github.com/danistark1/weatherStationApiSymfony/blob/156484b5324644c5e660
 - SensorController::ValidatePost()
 - SensorController::NormalizeData()
 - PostListener sensor readings report
-
-[![forthebadge](https://forthebadge.com/images/badges/open-source.svg)](https://forthebadge.com)
