@@ -7,6 +7,7 @@ use App\SensorCacheHandler;
 use App\SensorConfiguration;
 use App\SensorGatewayLogger;
 use Monolog\Logger;
+use PHPUnit\Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -170,7 +171,12 @@ class ConfigurationController extends AbstractController {
      * @return Response
      */
     public function deleteCache(): Response {
-        $this->configCache->clearCache();
+        try {
+            $this->configCache->clearCache();
+        } catch (\Exception $e) {
+            $this->logger->log("Cache clear failed", ['errorMsg' => $e->getMessage()],Logger::CRITICAL);
+        }
+
         $this->updateResponse(
             self::CACHE_CLEARED,
             self::STATUS_OK,
