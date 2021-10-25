@@ -47,11 +47,10 @@ MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 | weatherReport-toEmail |   | Email to send notifications to| 
 | weatherReport-emailTitleDailyReport  | Weather Station Report | Title of report email that will be recieved |
 | weatherReport-emailTitleNotifications | Weather Station notifications | Title of notifications email that will be recieved |
-| weatherReport-firstReportTime  | 07:00:00  | First report time |
-| weatherReport-secondReportTime  | 18:00:00  |  Second report time |
-| weatherReport-firstNotificationTime  | 06:00:00  | Third report time (not implmeneted yet) |
-| weatherReport-secondNotificationTime  | 17:00:00  | First notifications time |
-| weatherReport-thirdNotificationTime  | 18:00:00 | Second notifications time|
+| report_type_report-firstEmailTime  | 07:00:00  | First report time |
+| report_type_report-secondEmailTime  | 18:00:00  |  Second report time |
+| report_type_notification-firstEmailTime  | 06:00:00  | First notification time |
+| report_type_notification-secondEmailTime  | 17:00:00  | Second notifications time |
 | weatherReport-disableEmails  | 0  | When set to 1, no email will be set, used when debugging|
 | sensor-{sensorName}-upper-temperature | 34 | Used to set upper temp threshold for a certain sensor |
 | sensor-{sensorName}-lower-temperature | in Celcius  | ------------- |
@@ -90,9 +89,8 @@ If lower or upper temp/humidity threshold is reached, an email is sent twice a d
 
 | Config Key  | Value |
 | ------------- | ------------- |
-| weatherReport-firstNotificationTime  | 06:00:00 |
-| weatherReport-secondNotificationTime  | 17:00:00  |
-
+| report_type_notification-firstEmailTime  | 06:00:00 |
+| report_type_notification-secondEmailTime  | 17:00:00  |
 
 **Sensor names/IDs**
 
