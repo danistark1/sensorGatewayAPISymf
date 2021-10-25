@@ -46,13 +46,13 @@ class PostListener {
     private const FIRST_REPORT_TIME = "07:00:00";
 
     // Time to send second weather report
-    private const SECOND_REPORT_TIME = "06:00:00";
+    private const SECOND_REPORT_TIME = "19:00:00";
 
     // Time to send first notification report
     private const FIRST_NOTIFICATION_TIME = "12:00:00";
 
     // Time to send second notification report
-    private const SECOND_NOTIFICATION_TIME = "18:00:00";
+    private const SECOND_NOTIFICATION_TIME = "19:00:00";
 
     // Time to send third notification report
     private const THIRD_NOTIFICATION_TIME = "22:00:00";
@@ -60,17 +60,17 @@ class PostListener {
     /**
      * Notification type - report moisture
      */
-    private const REPORT_TYPE_REPORT_MOISTURE = 'Report Moisture';
+    private const REPORT_TYPE_REPORT_MOISTURE = 'report_type_moisture';
 
     /**
      * Notification type - notification
      */
-    private const REPORT_TYPE_NOTIFICATION = 'Notifications Weather';
+    private const REPORT_TYPE_NOTIFICATION = 'report_type_notification';
 
     /**
      * Notification type - report
      */
-    private const REPORT_TYPE_REPORT = 'Report Weather';
+    private const REPORT_TYPE_REPORT = 'report_type_report';
 
     /**
      * @var Environment
