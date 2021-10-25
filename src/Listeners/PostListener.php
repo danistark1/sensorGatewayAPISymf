@@ -260,10 +260,10 @@ class PostListener {
      */
     private function shouldSendReportTime(array $lastSentDailyReport, string $reportType = '') {
         $counterUpdate = 0;
-        $firstNotificationTime = $this->configCache->getConfigKey("$reportType-firstNotificationTime");
-        $firstReportTime = $this->configCache->getConfigKey("$reportType-firstReportTime");
-        $secondNotificationTime = $this->configCache->getConfigKey("$reportType-secondNotificationTime");
-        $secondReportTime = $this->configCache->getConfigKey("$reportType-secondReportTime");
+        $firstNotificationTime = $this->configCache->getConfigKey("$reportType-firstEmailTime");
+        $firstReportTime = $this->configCache->getConfigKey("$reportType-firstEmailTime");
+        $secondNotificationTime = $this->configCache->getConfigKey("$reportType-secondEmailTime");
+        $secondReportTime = $this->configCache->getConfigKey("$reportType-secondEmailTime");
 
         if (str_contains('notification', $reportType)) {
             $firstReport = $firstNotificationTime ?? self::FIRST_NOTIFICATION_TIME;
