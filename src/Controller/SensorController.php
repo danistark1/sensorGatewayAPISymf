@@ -412,7 +412,7 @@ class SensorController extends AbstractController  {
                 $paramsReportData = [
                     'tableName' => SensorReportEntity::class,
                     'dateTimeField' => 'lastSentDate',
-                    'interval' => $this->configCache->getConfigKey('pruning-records-interval') ?? 2,
+                    'interval' => $this->configCache->getConfigKey('pruning-report-interval') ?? 2,
 
                 ];
                 $paramsLoggerData = [
