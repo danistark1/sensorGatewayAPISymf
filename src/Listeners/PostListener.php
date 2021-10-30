@@ -73,6 +73,16 @@ class PostListener {
     private const REPORT_TYPE_REPORT = 'report_type_report';
 
     /**
+     * Config value to use when enabling daily readings report.
+     */
+    private const REPORT_DAILY_ENABLED = 'weatherReport-readingReportEnabled';
+
+    /**
+     * Config value to use when enabling  notifications report.
+     */
+    private const REPORT_NOTIFICATIONS_ENABLED = 'weatherReport-notificationsReportEnabled';
+
+    /**
      * @var Environment
      */
     public $templating;
@@ -134,8 +144,8 @@ class PostListener {
         if ((!$postInstance instanceof SensorEntity) && (!$postInstance instanceof SensorMoistureEntity)) {
             return;
         }
-        $reportEnabled = $this->configCache->isConfigSetKey('weatherReport-readingReportEnabled');
-        $notificationsReportEnabled = $this->configCache->isConfigSetKey('weatherReport-notificationsReportEnabled');
+        $reportEnabled = $this->configCache->isConfigSetKey(self::REPORT_DAILY_ENABLED);
+        $notificationsReportEnabled = $this->configCache->isConfigSetKey(self::REPORT_NOTIFICATIONS_ENABLED);
 
         // TODO Moisture Report
         $moistureReportEnabled = $this->configCache->isConfigSetKey('sensorReport-moistureReportEnabled');
@@ -439,15 +449,6 @@ class PostListener {
         $fromEmail = $this->configCache->getConfigKey('weatherReport-fromEmail');
         $toEmail = $this->configCache->getConfigKey('weatherReport-toEmail');
 
-        $emailsArray = [
-            'from' =>  $fromEmail,
-            'to' => $toEmail
-        ];
-        $valid = ArraysUtils::validateEmails($toEmail);
-        if (!$valid) {
-            $this->logger->log('Invalid Emails.', ['sender' => __CLASS__.__FUNCTION__, 'emails' => $emailsArray], Logger::CRITICAL);
-            return $emailData;
-        }
         if (!empty($sensorData) && !$this->configCache->getConfigKey('weatherReport-disableEmails')) {
             $emailData = [
                 'from' => $fromEmail,
@@ -455,18 +456,7 @@ class PostListener {
                 'subject' => $emailTitle,
                 'sensorData' => $sensorData
             ];
-            $message = (new Email())
-                ->from($fromEmail)
-                ->to($toEmail)
-                ->subject($emailTitle)
-                ->html(
-                    $this->templating->render(
-                        $twigEmail,
-                        $sensorData
-                    ),
-                    'text/html'
-                )
-            ;
+           $message = $this->prepareEmail($emailData, $sensorData, $twigEmail);
             try {
                 $this->mailer->send($message);
             } catch (TransportExceptionInterface $exception) {
@@ -479,10 +469,52 @@ class PostListener {
                     ],
                     Logger::DEBUG
                 );
-
             }
         }
         return $emailData;
+    }
+
+    /**
+     * Prepare email message object.
+     *
+     * @param $emailData
+     * @param $sensorData
+     * @param $twigEmail
+     * @return mixed|Email
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     */
+    private function prepareEmail($emailData, $sensorData, $twigEmail): Email {
+        $message = new Email();
+        $valid = ArraysUtils::validateEmails($emailData['from']);
+        if (is_array($emailData['to'])) {
+            foreach($emailData['to'] as $email) {
+                $message->addTo($email);
+                $valid = ArraysUtils::validateEmails($email);
+                if (!$valid) {
+                    break;
+                }
+            }
+        } else {
+            $message->addTo($emailData['to']);
+            $valid = ArraysUtils::validateEmails($emailData['to']);
+        }
+        if (!$valid) {
+            $this->logger->log('Invalid Emails.', ['sender' => __CLASS__.__FUNCTION__, 'emails' => [$emailData['to'], $emailData['from']]], Logger::CRITICAL);
+            return $emailData;
+        }
+        $message
+            ->from($emailData['from'])
+            ->subject($emailData['subject'])
+            ->html(
+                $this->templating->render(
+                    $twigEmail,
+                    $sensorData
+                ),
+                'text/html'
+            );
+        return $message;
     }
 
     /**

@@ -114,7 +114,7 @@ class ConfigurationController extends AbstractController {
     }
 
     /**
-     * Post weatherData.
+     * Post a config.
      *
      * @Route("/weatherstation/api/config",  methods={"POST"}, name="post_config")
      * @param string $key
@@ -133,6 +133,8 @@ class ConfigurationController extends AbstractController {
     }
 
     /**
+     * Get a config.
+     *
      * @param Request $request
      * @param $key
      * @return Response
@@ -141,7 +143,11 @@ class ConfigurationController extends AbstractController {
      */
     public function getConfig(Request $request, $key): Response {
         $value = $this->configCache->getConfigKey($key);
+        if (is_array($value)) {
+            $value = implode(',', $value);
+        }
         $this->response->setContent($value);
+
         return $this->response;
     }
 

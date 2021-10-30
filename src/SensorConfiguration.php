@@ -6,8 +6,9 @@ use SplFileInfo;
 //include('../config.php');
 
 /**
- * Class WeatherConfiguration
+ * Class SensorConfiguration
  *
+ * @deprecated use SensorCacheHandler.
  * @package App
  */
 class SensorConfiguration {
