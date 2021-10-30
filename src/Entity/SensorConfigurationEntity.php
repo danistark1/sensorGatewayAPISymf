@@ -24,7 +24,7 @@ class SensorConfigurationEntity
     private $configKey;
 
     /**
-     * @ORM\Column(type="string", length=50, nullable=true)
+     * @ORM\Column(type="string", length=250, nullable=true)
      */
     private $configValue;
 
@@ -32,11 +32,16 @@ class SensorConfigurationEntity
      * @ORM\Column(type="date")
      */
     private $configDate;
-
+    
     /**
      * @ORM\Column(type="string", length=25)
      */
     private $config_type;
+
+    /**
+     * @ORM\Column(type="json", nullable=true)
+     */
+    private $attributes = [];
 
     public function getId(): ?int
     {
@@ -87,6 +92,18 @@ class SensorConfigurationEntity
     public function setConfigType(string $config_type): self
     {
         $this->config_type = $config_type;
+
+        return $this;
+    }
+
+    public function getAttributes(): ?array
+    {
+        return $this->attributes;
+    }
+
+    public function setAttributes(?array $attributes): self
+    {
+        $this->attributes = $attributes;
 
         return $this;
     }

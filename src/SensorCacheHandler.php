@@ -32,8 +32,6 @@ class SensorCacheHandler {
     public function __construct(ManagerRegistry $managerRegistry) {
         $this->cache = new FilesystemAdapter();
         $this->managerRegistry = $managerRegistry;
-
-        // TODO Structure method to create all db configs.
     }
 
     /**
@@ -45,7 +43,7 @@ class SensorCacheHandler {
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getConfigKey(string $lookupKey) {
-        //$this->clearCache();
+        // First, try to get config value
         $value = $this->cache->get('cache_'.$lookupKey, function (ItemInterface $item) use ($lookupKey) {
             $item->expiresAfter(self::CACHE_EXPIRE);
             // cache expires in 365 days.
@@ -57,12 +55,30 @@ class SensorCacheHandler {
             }
             return $dbValue;
         });
-        // If config is not found, make sure cache key is also not found.
+        // If config is not found, make sure the saved cache key is also removed.
         if (empty($value)) {
             $this->clearCacheKey('cache_'.$lookupKey);
         }
         $result = !empty($value[0]) ? $value[0]->getConfigValue() : false;
+
+        // Second, If config value is empty, check the JSON attributes.
+        if (!$result) {
+            // TODO cache attribute.
+            $result = $this->getConfigAttributes($lookupKey);
+        }
         return $result;
+    }
+
+    /**
+     * Get config attributes (JSON).
+     * If sensorconfiguration.config_value is not set, search for $lookupKey in sensorconfiguration.attributes.
+     *
+     * @param string $lookupKey
+     * @return array
+     */
+    private function getConfigAttributes(string $lookupKey) {
+        $weatherConfigRepo = new SensorConfigurationRepository($this->managerRegistry);
+        return $weatherConfigRepo->getConfigAttributes($lookupKey);
     }
 
     /**
@@ -137,6 +153,7 @@ class SensorCacheHandler {
         });
         // If config is not found, make sure cache key is also not found.
         if (empty($value)) {
+            $this->cache->
             $this->clearCacheKey('cache_all_config_keys');
         }
         return $value;

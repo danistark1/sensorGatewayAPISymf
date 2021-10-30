@@ -42,7 +42,7 @@ class SensorConfigurationRepository extends ServiceEntityRepository {
         $weatherConfigEnt->setConfigKey($params['config_key']);
         $weatherConfigEnt->setConfigValue($params['config_value']);
         $weatherConfigEnt->setConfigType($params['config_type']);
-
+        $weatherConfigEnt->setAttributes($params['attributes']);
         $dt = SensorDateTime::dateNow();
         $weatherConfigEnt->setConfigDate($dt);
 
@@ -55,6 +55,17 @@ class SensorConfigurationRepository extends ServiceEntityRepository {
         }
         $em->flush();
         return $result;
+    }
+
+    public function getConfigAttributes(string $lookupKey) {
+        $dbValue = false;
+        $result = parent::findBy(['configKey' => $lookupKey],[], 1);
+        // var_dump($result);
+        if (is_array($result) && !empty($result)) {
+            $dbValue = $result[0]->getAttributes();
+        }
+
+        return $dbValue;
     }
 
     /**
@@ -100,6 +111,7 @@ class SensorConfigurationRepository extends ServiceEntityRepository {
         return $dbValue;
         //return isset($value[0]) ? $value[0]->getConfigValue() : [];
     }
+
 
     // /**
     //  * @return WeatherConfiguration[] Returns an array of WeatherConfiguration objects
