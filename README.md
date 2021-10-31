@@ -27,7 +27,7 @@ APIs for WirelessSensorGateway project https://github.com/danistark1/wirelessSen
 
 **.env**
 
-DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 3306)/weatherStation
+DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 3306)/sensorGateway
 
  **Configuration (For sensor readings report)**
  
