@@ -1,20 +1,20 @@
 <?php
 
 
-namespace App;
-use App\Entity\SensorEntity;
+namespace App\APISchemas;
+use App\Entity\SensorMoistureEntity;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
 /**
- * Class AssertSensorNameValidator
+ * Class AssertSensorIDValidator
  *
  * @package App
  */
- class AssertSensorNameValidator extends ConstraintValidator {
-    public function isValid($sensorName, Constraint $constraint) {
-        $validSensorNames = SensorEntity::$validSensorNames;
-        if (in_array($sensorName,  $validSensorNames)) {
+ class AssertMoistureSensorIDValidator extends ConstraintValidator {
+    public function isValid($sensorId, Constraint $constraint) {
+        $validSensorIds = SensorMoistureEntity::getValidSensorIDs();
+        if (in_array($sensorId,  $validSensorIds)) {
             return true;
         } else {
             return false;

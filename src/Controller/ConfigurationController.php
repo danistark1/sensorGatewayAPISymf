@@ -3,19 +3,15 @@
 namespace App\Controller;
 
 use App\Repository\SensorConfigurationRepository;
-use App\SensorCacheHandler;
+use App\GatewayCache\SensorCacheHandler;
 use App\SensorConfiguration;
-use App\SensorGatewayLogger;
+use App\Logger\SensorGatewayLogger;
 use Monolog\Logger;
-use PHPUnit\Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-
-
+use Symfony\Component\Routing\Annotation\Route;
 
 /**
  * Class ConfigurationController
@@ -60,7 +56,11 @@ class ConfigurationController extends AbstractController {
      * @param SensorGatewayLogger $logger
      * @param SensorConfiguration $config
      */
-    public function __construct(SensorConfigurationRepository $weatherConfigurationRepository, SensorGatewayLogger $logger, SensorCacheHandler $configCache) {
+    public function __construct(
+        SensorConfigurationRepository $weatherConfigurationRepository,
+        SensorGatewayLogger $logger,
+        SensorCacheHandler $configCache
+    ) {
         $this->response  = new Response();
         $this->response->headers->set('Content-Type', 'application/json');
         $this->request  = new Request();

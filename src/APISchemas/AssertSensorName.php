@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App;
+namespace App\APISchemas;
 
 
 
@@ -11,9 +11,9 @@ use Symfony\Component\Validator\ConstraintValidator;
 /**
  * @Annotation
  */
-class AssertMoistureSensorID extends Constraint {
+class AssertSensorName extends Constraint {
     public $value ;
-    public $message = 'Sensor ID is invalid';
+    public $message = 'Sensor name  is invalid';
 
 
     // in the base Symfony\Component\Validator\Constraint class

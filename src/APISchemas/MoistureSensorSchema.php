@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App;
+namespace App\APISchemas;
 
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Constraints as Assert;

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App;
+namespace App\GatewayCache;
 
 
 use App\Repository\SensorConfigurationRepository;
