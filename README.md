@@ -44,7 +44,7 @@ MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 | weatherReport-readingReportEnabled  | 1  | Temp/Humidity report enabled/disabled |
 | weatherReport-notificationsReportEnabled  | 1  | Temp/Humidity notifications enabled/disabled  |
 | weatherReport-fromEmail  |  fromEmail | Email to use for sending notifications|
-| weatherReport-toEmail |   | Email to send notifications to| 
+| weatherReport-toEmail |  (configure this in the attributes field sensorConfiguration.attributes for multiple recipeints ["email1","email2","email3"..]) or just the config_value for single recipient | Email to send notifications to| 
 | weatherReport-emailTitleDailyReport  | Weather Station Report | Title of report email that will be recieved |
 | weatherReport-emailTitleNotifications | Weather Station notifications | Title of notifications email that will be recieved |
 | report_type_report-firstEmailTime  | 07:00:00  | First report time |
