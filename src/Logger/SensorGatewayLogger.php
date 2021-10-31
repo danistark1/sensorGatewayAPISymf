@@ -1,10 +1,12 @@
 <?php
 
-namespace App;
+namespace App\Logger;
 
+use App\GatewayCache\SensorCacheHandler;
 use App\Logger\MonologDBHandler;
 use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Logger;
+use Symfony\Component\Mailer\MailerInterface;
 
 /**
  * Class WeatherStationLogger
@@ -20,8 +22,11 @@ class SensorGatewayLogger extends MonologDBHandler {
      * @param int $level
      * @param bool $bubble
      */
-    public function __construct(EntityManagerInterface $em, SensorCacheHandler $cacheHandler, $level = Logger::API, $bubble = true) {
-        parent::__construct($em, $cacheHandler, $level, $bubble);
+    public function __construct(
+        EntityManagerInterface $em,
+        SensorCacheHandler $cacheHandler,
+        MailerInterface $mailer, $level = Logger::API, $bubble = true) {
+        parent::__construct($em, $cacheHandler,$mailer,  $level, $bubble);
     }
 
     /**

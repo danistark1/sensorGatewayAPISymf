@@ -12,7 +12,7 @@ use App\Controller\SensorController;
 
 /**
  * Class SensorFixtures
- *
+ * @deprecated Fields used here are outdated.
  * @package App\DataFixtures
  */
 class SensorFixtures extends Fixture {

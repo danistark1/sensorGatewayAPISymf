@@ -2,12 +2,15 @@
 
 namespace App\Logger;
 use App\Entity\SensorLoggerEntity;
-use App\SensorCacheHandler;
+use App\GatewayCache\SensorCacheHandler;
 use App\SensorConfiguration;
 use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use App\Utils\SensorDateTime;
+use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 
 class MonologDBHandler extends AbstractProcessingHandler {
     /**
@@ -15,17 +18,22 @@ class MonologDBHandler extends AbstractProcessingHandler {
      */
     protected $em;
 
+    private const EMAIL_LOG = "Sensor Gateway Logger";
     /**
      * @var SensorConfiguration
      */
     protected $config;
 
+    /** @var MailerInterface  */
+    private $mailer;
+
     /** @var SensorCacheHandler  */
     protected $configCache;
 
-    public function __construct(EntityManagerInterface $em, SensorCacheHandler $configCache, $level = Logger::API, $bubble = true) {
+    public function __construct(EntityManagerInterface $em, SensorCacheHandler $configCache, MailerInterface $mailer, $level = Logger::API, $bubble = true) {
         $this->em = $em;
         $this->configCache = $configCache;
+        $this->mailer = $mailer;
         parent::__construct($level, $bubble);
     }
 
@@ -38,6 +46,15 @@ class MonologDBHandler extends AbstractProcessingHandler {
     public function write(array $record): void {
         // Check if debugging is enabled.
         $debug = $this->configCache->getConfigKey('application-debug');
+        // Check if email logging is enabled, get configured logging level.
+        $emailLoggingEnabled = $this->configCache->getConfigKey('email-logging-enabled');
+        $emailLoggingLevel = $this->configCache->getConfigKey('email-logging-level');
+
+        if ($emailLoggingEnabled) {
+            if (!in_array(strtolower($record['level_name']), $emailLoggingLevel)) {
+                return;
+            }
+        }
         if (!empty($debug) && $debug == 1) {
             //if( 'doctrine' == $record['channel'] ) {
             // TODO Log level should be configurable
@@ -67,6 +84,14 @@ class MonologDBHandler extends AbstractProcessingHandler {
                 $this->em->clear();
                 $this->em->persist($logEntry);
                 $this->em->flush();
+                if ($emailLoggingEnabled) {
+                    $message = new Email();
+                    $message->addTo($this->configCache->getConfigKey('admin-email'));
+                    $message->from($this->configCache->getConfigKey('weatherReport-fromEmail'));
+                    $message->subject(self::EMAIL_LOG);
+                    $message->text($record['message']);
+                    $this->mailer->send($message);
+                }
             } catch (\Exception $e) {
                 error_log($record['message']);
                 error_log($e->getMessage());

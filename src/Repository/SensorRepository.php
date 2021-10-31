@@ -6,7 +6,7 @@ namespace App\Repository;
 
 use App\Entity\SensorEntity;
 use App\Utils\SensorDateTime;
-use App\SensorGatewayLogger;
+use App\Logger\SensorGatewayLogger;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ConnectionException;
 use Doctrine\ORM\ORMException;
@@ -23,7 +23,7 @@ use Monolog\Logger;
  */
 class SensorRepository extends ServiceEntityRepository {
 
-    /** @var \App\SensorGatewayLogger  */
+    /** @var SensorGatewayLogger  */
     private $logger;
 
     public function __construct(ManagerRegistry $registry, SensorGatewayLogger $logger) {
