@@ -38,7 +38,8 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 (env file)
 MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 ```
-admin-email
+**Note**: Config values in [] are for sensorConfiguration.attributes field(JSON), the rest are for sensorConfiguration.config_value
+
 | Config Key  | Value | Function |
 | ------------- | ------------- | ------------- |
 | email-logging-enabled  | 1  | enable/disable email logging |
