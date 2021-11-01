@@ -38,10 +38,12 @@ DATABASE_URL=mysql://yourdbusername:yourdbpassword@youdbip:yourdbport(default 33
 (env file)
 MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 ```
-
+admin-email
 | Config Key  | Value | Function |
 | ------------- | ------------- | ------------- |
-| weatherReport-readingReportEnabled  | 1  | Temp/Humidity report enabled/disabled |
+| email-logging-enabled  | 1  | enable/disable email logging |
+| email-logging-level  | ["info","critical","debug"..]  | event level to log |
+| admin-email  | email address  | application's admin email address |
 | weatherReport-notificationsReportEnabled  | 1  | Temp/Humidity notifications enabled/disabled  |
 | weatherReport-fromEmail  |  fromEmail | Email to use for sending notifications|
 | weatherReport-toEmail |  (configure this in the attributes field sensorConfiguration.attributes for multiple recipeints ["email1","email2","email3"..]) or just the config_value for single recipient | Email to send notifications to| 
