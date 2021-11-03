@@ -61,20 +61,25 @@ class MonologDBHandler extends AbstractProcessingHandler {
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function write(array $record): void {
-        // Check global logging config
+        $shouldLog = true;
+        $shouldEmailLog = true;
         $loggingLevelRecord = strtolower($record['level_name']) ?? self::CRITICAL;
         $loggingEnabled = $this->configCache->getConfigKey('logging-enabled');
         $loggingLevel = $this->configCache->getConfigKey('logging-level') ?? self::CRITICAL;
-
         $emailLoggingEnabled = $this->configCache->getConfigKey('email-logging-enabled');
         $emailLoggingLevel = $this->configCache->getConfigKey('email-logging-level');
-        $shouldEmailLog = true;
-        if ($emailLoggingEnabled) {
+        
+        if ($loggingEnabled === 1) {
+            if (!in_array($loggingLevelRecord, $loggingLevel)) {
+                $shouldLog = false;
+            }
+        }
+        if ($emailLoggingEnabled === 1) {
             if (!in_array($loggingLevelRecord, $emailLoggingLevel)) {
                 $shouldEmailLog = false;
             }
         }
-        if ($loggingEnabled === 1 && $loggingLevelRecord === $loggingLevel) {
+        if ($shouldLog) {
             try {
                 $logEntry = new SensorLoggerEntity();
                 $logEntry->setMessage($record['message']);
