@@ -68,7 +68,7 @@ class MonologDBHandler extends AbstractProcessingHandler {
         $loggingLevel = $this->configCache->getConfigKey('logging-level') ?? self::CRITICAL;
         $emailLoggingEnabled = $this->configCache->getConfigKey('email-logging-enabled');
         $emailLoggingLevel = $this->configCache->getConfigKey('email-logging-level');
-        
+
         if ($loggingEnabled === 1) {
             if (!in_array($loggingLevelRecord, $loggingLevel)) {
                 $shouldLog = false;
