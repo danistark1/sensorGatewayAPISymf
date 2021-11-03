@@ -12,13 +12,23 @@ use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 
+/**
+ * Monolog handler.
+ */
 class MonologDBHandler extends AbstractProcessingHandler {
-    /**
-     * @var EntityManagerInterface
-     */
+    /** @var EntityManagerInterface */
     protected $em;
 
     private const EMAIL_LOG = "Sensor Gateway Logger";
+
+    private const CRITICAL = 'critical';
+
+    private const DEBUG = 'debug';
+
+    private const INFO = 'info';
+
+    private const WARNING = 'warning';
+
     /**
      * @var SensorConfiguration
      */
@@ -30,6 +40,13 @@ class MonologDBHandler extends AbstractProcessingHandler {
     /** @var SensorCacheHandler  */
     protected $configCache;
 
+    /**
+     * @param EntityManagerInterface $em
+     * @param SensorCacheHandler $configCache
+     * @param MailerInterface $mailer
+     * @param int $level
+     * @param bool $bubble
+     */
     public function __construct(EntityManagerInterface $em, SensorCacheHandler $configCache, MailerInterface $mailer, $level = Logger::API, $bubble = true) {
         $this->em = $em;
         $this->configCache = $configCache;
@@ -44,24 +61,20 @@ class MonologDBHandler extends AbstractProcessingHandler {
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function write(array $record): void {
-        // Check if debugging is enabled.
-        $debug = $this->configCache->getConfigKey('application-debug');
-        // Check if email logging is enabled, get configured logging level.
+        // Check global logging config
+        $loggingLevelRecord = strtolower($record['level_name']) ?? self::CRITICAL;
+        $loggingEnabled = $this->configCache->getConfigKey('logging-enabled');
+        $loggingLevel = $this->configCache->getConfigKey('logging-level') ?? self::CRITICAL;
+
         $emailLoggingEnabled = $this->configCache->getConfigKey('email-logging-enabled');
         $emailLoggingLevel = $this->configCache->getConfigKey('email-logging-level');
-
+        $shouldEmailLog = true;
         if ($emailLoggingEnabled) {
-            if (!in_array(strtolower($record['level_name']), $emailLoggingLevel)) {
-                return;
+            if (!in_array($loggingLevelRecord, $emailLoggingLevel)) {
+                $shouldEmailLog = false;
             }
         }
-        if (!empty($debug) && $debug == 1) {
-            //if( 'doctrine' == $record['channel'] ) {
-            // TODO Log level should be configurable
-//            if ((int)$record['level'] === Logger::INFO || (int)$record['level'] === Logger::DEBUG) {
-//                return;
-//            }
-
+        if ($loggingEnabled === 1 && $loggingLevelRecord === $loggingLevel) {
             try {
                 $logEntry = new SensorLoggerEntity();
                 $logEntry->setMessage($record['message']);
@@ -84,7 +97,7 @@ class MonologDBHandler extends AbstractProcessingHandler {
                 $this->em->clear();
                 $this->em->persist($logEntry);
                 $this->em->flush();
-                if ($emailLoggingEnabled) {
+                if ($emailLoggingEnabled && $shouldEmailLog) {
                     $message = new Email();
                     $message->addTo($this->configCache->getConfigKey('admin-email'));
                     $message->from($this->configCache->getConfigKey('weatherReport-fromEmail'));
@@ -97,88 +110,6 @@ class MonologDBHandler extends AbstractProcessingHandler {
                 error_log($e->getMessage());
             }
         }
-
-
-//        // Ensure the doctrine channel is ignored (unless its greater than a warning error), otherwise you will create an infinite loop, as doctrine like to log.. a lot..
-//        if( 'doctrine' == $record['channel'] ) {
-//
-//            if( (int)$record['level'] >= Logger::WARNING ) {
-//                error_log($record['message']);
-//            }
-//
-//            return;
-//        }
-//        // Only log errors greater than a warning
-//        // TODO - you could ideally add this into configuration variable
-//        if( (int)$record['level'] >= Logger::NOTICE ) {
-//
-//            try
-//            {
-//                // Logs are inserted as separate SQL statements, separate to the current transactions that may exist within the entity manager.
-//                $em = $this->_container->get('doctrine')->getManager();
-//                $conn = $em->getConnection();
-//
-//                $created = date('Y-m-d H:i:s');
-//
-//                $serverData = ""; //$record['extra']['server_data'];
-//                $referer = "";
-//                if (isset($_SERVER['HTTP_REFERER'])){
-//                    $referer= $_SERVER['HTTP_REFERER'];
-//                }
-//
-//                $stmt = $em->getConnection()->prepare('INSERT INTO system_log(log, level, server_data, modified, created)
-//                                    VALUES(' . $conn->quote($record['message']) . ', \'' . $record['level'] . '\', ' . $conn->quote($referer) . ', \'' . $created . '\', \'' . $created . '\');');
-//                $stmt->execute();
-//
-//            } catch( \Exception $e ) {
-//
-//                // Fallback to just writing to php error logs if something really bad happens
-//                error_log($record['message']);
-//                error_log($e->getMessage());
-//            }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
 
 }
