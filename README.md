@@ -43,8 +43,10 @@ MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 | Config Key  | Value | Function |
 | ------------- | ------------- | ------------- |
 | email-logging-enabled  | 1  | enable/disable email logging |
-| email-logging-level  | ["info","critical","debug"..]  | event level to log |
+| email-logging-level  | attributes field ["info","critical","debug"..]  | event level to log |
 | admin-email  | email address  | application's admin email address |
+|logging-enabled| 0  | when set to one, all logs get saved to sensorConfiguration table |
+|logging-level| 0  | attributes field [""] |
 | weatherReport-notificationsReportEnabled  | 1  | Temp/Humidity notifications enabled/disabled  |
 | weatherReport-fromEmail  |  fromEmail | Email to use for sending notifications|
 | weatherReport-toEmail |  (configure this in the attributes field sensorConfiguration.attributes for multiple recipeints ["email1","email2","email3"..]) or just the config_value for single recipient | Email to send notifications to| 
@@ -62,7 +64,6 @@ MAILER_DSN=gmail+smtp://yoursendfromemail:yourpassword
 | sensor-{sensorName}-lower-moisture | (0 to 100) | ------------- |
 | sensor-{sensorName}-upper-moisture | 0  | ------------- |
 |application-timezone|America/Toronto  | Application server timezone |
-|application-debug| 0  | when set to one, log table will record application errors |
 |application-version|2.0  | Sets the application version |
 |pruning-records-interval| 1   | Sensors data pruning|
 |pruning-logs-interval| 1  |  Log data pruning|
