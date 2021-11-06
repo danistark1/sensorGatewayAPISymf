@@ -85,6 +85,16 @@ class SensorReportRepository extends ServiceEntityRepository {
 
         return $result;
     }
+
+    public function delete($type) {
+        $em = $this->getEntityManager();
+
+
+        $entity = $em->getRepository(SensorReportEntity::class)->findOneBy(['reportType' => $type]);
+        $em->remove($entity);
+        $em->flush();
+    }
+
     /*
     public function findOneBySomeField($value): ?WeatherReport
     {

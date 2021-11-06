@@ -7,6 +7,7 @@ namespace App\Listeners;
 use App\Entity\SensorEntity;
 use App\Entity\SensorMoistureEntity;
 use App\Entity\SensorReportEntity;
+use App\Repository\SensorConfigurationRepository;
 use App\Repository\SensorReportRepository;
 use App\Utils\ArraysUtils;
 use App\GatewayCache\SensorCacheHandler;
@@ -127,7 +128,6 @@ class PostListener {
         $this->logger = $logger;
         $this->weatherReportRepository = $weatherReportRepository;
         $this->configCache = $configCacheHandler;
-
     }
 
     /**
@@ -143,6 +143,7 @@ class PostListener {
         if ((!$postInstance instanceof SensorEntity) && (!$postInstance instanceof SensorMoistureEntity)) {
             return;
         }
+
         $reportEnabled = $this->configCache->isConfigSetKey(self::REPORT_DAILY_ENABLED);
         $notificationsReportEnabled = $this->configCache->isConfigSetKey(self::REPORT_NOTIFICATIONS_ENABLED);
 
@@ -183,6 +184,8 @@ class PostListener {
             // Check if notification report needs to be sent.
             $notificationsCounter = $this->shouldSendReportTime($lastSentNotificationReport, self::REPORT_TYPE_NOTIFICATION);
             if ($notificationsCounter && $notificationsCounter !== 0 && $notificationsReportEnabled && !empty($latestNotificationsData)) {
+           // insert dummy record to lock sending
+                $this->updateWeatherReport('dummy-'.self::REPORT_TYPE_NOTIFICATION,$notificationsCounter, []);
                 try {
                     $result = $this->sendReport(
                         $latestNotificationsData,
@@ -203,6 +206,7 @@ class PostListener {
             // Check if daily report needs to be sent.
             $reportCounter = $this->shouldSendReportTime($lastSentDailyReport, self::REPORT_TYPE_REPORT);
             if ($reportCounter && $reportCounter !== 0 && $reportEnabled && !empty($latestSensorData)) {
+                $this->updateWeatherReport('dummy-'.self::REPORT_TYPE_REPORT,$notificationsCounter, []);
                 try {
                     $result = $this->sendReport(
                         $latestSensorData,
@@ -269,6 +273,7 @@ class PostListener {
      */
     private function shouldSendReportTime(array $lastSentDailyReport, string $reportType = '') {
         $counterUpdate = 0;
+
         $firstNotificationTime = $this->configCache->getConfigKey("$reportType-firstEmailTime");
         $firstReportTime = $this->configCache->getConfigKey("$reportType-firstEmailTime");
         $secondNotificationTime = $this->configCache->getConfigKey("$reportType-secondEmailTime");
@@ -535,6 +540,11 @@ class PostListener {
                     'reportType' => $reportType
                 ]
             );
+            // delete dummy record when type is not dummy.
+            if (!str_contains($reportType,'dummy')) {
+                $this->weatherReportRepository->delete($reportType);
+            }
+
         } catch (OptimisticLockException | ORMException $e) {
             $this->logger->log($e->getMessage(), ['sender' => __CLASS__.__FUNCTION__, 'errorCode' => $e->getCode()], Logger::CRITICAL);
         }

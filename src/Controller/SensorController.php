@@ -9,6 +9,7 @@ use App\APISchemas\MoistureSensorSchema;
 use App\Repository\SensorMoistureRepository;
 use App\APISchemas\StationPostSchema;
 use App\GatewayCache\SensorCacheHandler;
+use App\Repository\SensorReportRepository;
 use App\SensorConfiguration;
 use App\Logger\SensorGatewayLogger;
 use App\Repository\SensorRepository;
@@ -301,6 +302,27 @@ class SensorController extends AbstractController  {
         $this->updateResponseHeader();
         return $this->response;
     }
+
+    /**
+     * Delete weather records based on the set interval.
+     * Default is 1 day.
+     *
+     * @Route("weatherstation/api/delete/report/{type}/del", methods={"DELETE"}, name="delete_report")
+     * @param array $params
+     * @return Response
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function deleteReport(Request $request, SensorReportRepository $sensorReportRepository, string $type ): Response {
+        $sensorReportRepository->delete($type);
+
+        $this->response->setStatusCode(self::STATUS_OK);
+        $this->updateResponseHeader();
+        return $this->response;
+    }
+
+
+
 
     /**
      * Validate incoming request.

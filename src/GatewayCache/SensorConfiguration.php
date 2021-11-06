@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace App\GatewayCache;
 
 use SplFileInfo;
 //include('../config.php');

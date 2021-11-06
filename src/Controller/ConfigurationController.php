@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Repository\SensorConfigurationRepository;
 use App\GatewayCache\SensorCacheHandler;
-use App\SensorConfiguration;
+use App\GatewayCache\SensorConfiguration;
 use App\Logger\SensorGatewayLogger;
 use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
