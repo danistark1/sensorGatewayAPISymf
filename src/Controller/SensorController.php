@@ -404,43 +404,46 @@ class SensorController extends AbstractController  {
                 return $this->response;
             }
             $result = $this->sensorRepository->save($parameters);
-            // Historic sensor readings.
-            $historicReadingsEntity = $this->getHistoricReading($parameters, 'temperature');
-            $historicReadingsEntityHumid = $this->getHistoricReading($parameters, 'humidity');
-            $params = [
-                'name' => $parameters['room']
-            ];
+            try {
+                // Historic sensor readings.
+                $historicReadingsEntity = $this->getHistoricReading($parameters, 'temperature');
+                $historicReadingsEntityHumid = $this->getHistoricReading($parameters, 'humidity');
+                $params = [
+                    'name' => $parameters['room']
+                ];
 
-            if ($historicReadingsEntity === null) {
-                $params['lowest_reading'] = $parameters['temperature'];
-                $params['highest_reading'] = $parameters['temperature'];
-                $params['type'] = 'temperature';
-                $this->sensorHistoricReadingsRepository->save($params);
-            }
-            if ($historicReadingsEntityHumid === null) {
-                $params['lowest_reading'] = $parameters['humidity'];
-                $params['highest_reading'] = $parameters['humidity'];
-                $params['type'] = 'humidity';
-                $this->sensorHistoricReadingsRepository->save($params);
-            }
-            if ($historicReadingsEntity) {
-                if ($parameters['temperature'] < $historicReadingsEntity->getLowestReading()) {
-                    $historicReadingsEntity->setLowestReading($parameters['temperature']);
-                } elseif($historicReadingsEntity && $parameters['temperature'] > $historicReadingsEntity->getHighestReading()) {
-                    $historicReadingsEntity->setHighestReading($parameters['temperature']);
+                if ($historicReadingsEntity === null) {
+                    $params['lowest_reading'] = $parameters['temperature'];
+                    $params['highest_reading'] = $parameters['temperature'];
+                    $params['type'] = 'temperature';
+                    $this->sensorHistoricReadingsRepository->save($params);
                 }
-                $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntity);
-            }
-
-            if ($historicReadingsEntityHumid) {
-                if ($parameters['humidity'] < $historicReadingsEntityHumid->getLowestReading()) {
-                    $historicReadingsEntityHumid->setLowestReading($parameters['humidity']);
-                } elseif($parameters['humidity'] > $historicReadingsEntityHumid->getHighestReading()) {
-                    $historicReadingsEntityHumid->setHighestReading($parameters['humidity']);
+                if ($historicReadingsEntityHumid === null) {
+                    $params['lowest_reading'] = $parameters['humidity'];
+                    $params['highest_reading'] = $parameters['humidity'];
+                    $params['type'] = 'humidity';
+                    $this->sensorHistoricReadingsRepository->save($params);
                 }
-                $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntityHumid);
-            }
+                if ($historicReadingsEntity) {
+                    if ($parameters['temperature'] < $historicReadingsEntity->getLowestReading()) {
+                        $historicReadingsEntity->setLowestReading($parameters['temperature']);
+                    } elseif ($historicReadingsEntity && $parameters['temperature'] > $historicReadingsEntity->getHighestReading()) {
+                        $historicReadingsEntity->setHighestReading($parameters['temperature']);
+                    }
+                    $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntity);
+                }
 
+                if ($historicReadingsEntityHumid) {
+                    if ($parameters['humidity'] < $historicReadingsEntityHumid->getLowestReading()) {
+                        $historicReadingsEntityHumid->setLowestReading($parameters['humidity']);
+                    } elseif ($parameters['humidity'] > $historicReadingsEntityHumid->getHighestReading()) {
+                        $historicReadingsEntityHumid->setHighestReading($parameters['humidity']);
+                    }
+                    $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntityHumid);
+                }
+            } catch(Exception $e) {
+                $this->logger->log('historic data saving failed', ['errorMessage' => $e->getMessage()], Logger::CRITICAL);
+            }
             // TODO UPDATE date for both tables to be insert_date_time.
             if ($result) {
                 // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
