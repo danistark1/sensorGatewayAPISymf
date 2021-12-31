@@ -404,6 +404,7 @@ class SensorController extends AbstractController  {
                 return $this->response;
             }
             $result = $this->sensorRepository->save($parameters);
+
             try {
                 // Historic sensor readings.
                 $historicReadingsEntity = $this->getHistoricReading($parameters, 'temperature');

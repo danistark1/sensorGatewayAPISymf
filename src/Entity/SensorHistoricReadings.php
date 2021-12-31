@@ -60,24 +60,24 @@ class SensorHistoricReadings
         return $this;
     }
 
-    public function getLowestReading(): ?int
+    public function getLowestReading(): ?float
     {
         return $this->lowestReading;
     }
 
-    public function setLowestReading(?int $lowestReading): self
+    public function setLowestReading( $lowestReading): self
     {
         $this->lowestReading = $lowestReading;
 
         return $this;
     }
 
-    public function getHighestReading(): ?int
+    public function getHighestReading(): ?float
     {
         return $this->highestReading;
     }
 
-    public function setHighestReading(?int $highestReading): self
+    public function setHighestReading($highestReading): self
     {
         $this->highestReading = $highestReading;
 
