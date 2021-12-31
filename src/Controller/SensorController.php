@@ -12,6 +12,7 @@ use App\GatewayCache\SensorCacheHandler;
 use App\SensorConfiguration;
 use App\Logger\SensorGatewayLogger;
 use App\Repository\SensorRepository;
+use App\Repository\SensorHistoricReadingsRepository;
 use DateInterval;
 use DateTime;
 use Exception;
@@ -68,6 +69,9 @@ class SensorController extends AbstractController  {
      */
     private $sensorRepository;
 
+    /** @var SensorHistoricReadingsRepository */
+    private $sensorHistoricReadingsRepository;
+
     /**
      * @var SensorGatewayLogger
      */
@@ -92,6 +96,7 @@ class SensorController extends AbstractController  {
      */
     public function __construct(
         SensorRepository $sensorRepository,
+        SensorHistoricReadingsRepository $sensorHistoricReadingsRepository,
         SensorGatewayLogger $logger,
         SensorCacheHandler $cacheHandler) {
         $this->response  = new Response();
@@ -99,6 +104,7 @@ class SensorController extends AbstractController  {
         $this->request  = new Request();
         $this->logger = $logger;
         $this->sensorRepository = $sensorRepository;
+        $this->sensorHistoricReadingsRepository = $sensorHistoricReadingsRepository;
         $this->configCache = $cacheHandler;
         $this->response->headers->set('weatherStation-version', $this->configCache->getConfigKey('application-version'));
         $this->time_start = microtime(true);
@@ -398,6 +404,43 @@ class SensorController extends AbstractController  {
                 return $this->response;
             }
             $result = $this->sensorRepository->save($parameters);
+            // Historic sensor readings.
+            $historicReadingsEntity = $this->getHistoricReading($parameters, 'temperature');
+            $historicReadingsEntityHumid = $this->getHistoricReading($parameters, 'humidity');
+            $params = [
+                'name' => $parameters['room']
+            ];
+
+            if ($historicReadingsEntity === null) {
+                $params['lowest_reading'] = $parameters['temperature'];
+                $params['highest_reading'] = $parameters['temperature'];
+                $params['type'] = 'temperature';
+                $this->sensorHistoricReadingsRepository->save($params);
+            }
+            if ($historicReadingsEntityHumid === null) {
+                $params['lowest_reading'] = $parameters['humidity'];
+                $params['highest_reading'] = $parameters['humidity'];
+                $params['type'] = 'humidity';
+                $this->sensorHistoricReadingsRepository->save($params);
+            }
+            if ($historicReadingsEntity) {
+                if ($parameters['temperature'] < $historicReadingsEntity->getLowestReading()) {
+                    $historicReadingsEntity->setLowestReading($parameters['temperature']);
+                } elseif($historicReadingsEntity && $parameters['temperature'] > $historicReadingsEntity->getHighestReading()) {
+                    $historicReadingsEntity->setHighestReading($parameters['temperature']);
+                }
+                $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntity);
+            }
+
+            if ($historicReadingsEntityHumid) {
+                if ($parameters['humidity'] < $historicReadingsEntityHumid->getLowestReading()) {
+                    $historicReadingsEntityHumid->setLowestReading($parameters['humidity']);
+                } elseif($parameters['humidity'] > $historicReadingsEntityHumid->getHighestReading()) {
+                    $historicReadingsEntityHumid->setHighestReading($parameters['humidity']);
+                }
+                $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntityHumid);
+            }
+
             // TODO UPDATE date for both tables to be insert_date_time.
             if ($result) {
                 // Everytime a record is inserted, we want to call the delete API to delete records that are older than 1 day.
@@ -430,6 +473,17 @@ class SensorController extends AbstractController  {
         }
         $this->updateResponseHeader();
         return $this->response;
+    }
+
+    /**
+     * Get historic sensor readings.
+     *
+     * @param $parameters
+     * @param $type
+     * @return \App\Entity\SensorHistoricReadings|null
+     */
+    private function getHistoricReading($parameters, $type) {
+        return $this->sensorHistoricReadingsRepository->findOneBy(['name' => $parameters['room'], 'type' => $type]);
     }
 
     /**

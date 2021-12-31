@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20211030030836 extends AbstractMigration
+final class Version20211231160819 extends AbstractMigration
 {
     public function getDescription() : string
     {
@@ -20,12 +20,12 @@ final class Version20211030030836 extends AbstractMigration
     public function up(Schema $schema) : void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE sensorconfiguration ADD attributes LONGTEXT DEFAULT NULL COMMENT \'(DC2Type:json)\'');
+        $this->addSql('ALTER TABLE sensorhistoricreadings ADD insert_date_time DATE DEFAULT NULL');
     }
 
     public function down(Schema $schema) : void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE sensorConfiguration DROP attributes');
+        $this->addSql('ALTER TABLE sensorHistoricReadings DROP insert_date_time');
     }
 }
