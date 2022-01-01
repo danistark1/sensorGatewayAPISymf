@@ -37,26 +37,28 @@ class SensorHistoricReadingsRepository extends ServiceEntityRepository
     /**
      * Update a recipe.
      *
-     * @param $params
+     * @param $historicReadingsEntity
      * @return mixed
-     * @throws ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
      */
     public function updateHistoricReadings($historicReadingsEntity) {
         $em = $this->getEntityManager();
-//        $em->getConnection()->beginTransaction();
         try {
             $em->persist($historicReadingsEntity);
             $em->flush();
-            // Try and commit the transaction
-            //      $em->getConnection()->commit();
-        }catch (ORMInvalidArgumentException | ORMException $e) {
-            //$this->logger->log('test', [], Logger::CRITICAL);
+        } catch (ORMInvalidArgumentException | ORMException $e) {
         }
 
         return $historicReadingsEntity;
     }
 
+    /**
+     * Save historic readings.
+     *
+     * @param array $params
+     * @return int|null
+     * @throws \Doctrine\DBAL\ConnectionException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     public function save(array $params) {
         $em = $this->getEntityManager();
         $sensorHistoricReadings = new SensorHistoricReadings();
@@ -66,16 +68,15 @@ class SensorHistoricReadingsRepository extends ServiceEntityRepository
         $sensorHistoricReadings->setType($params['type']);
 
         $dt = SensorDateTime::dateNow('', false);
-        $sensorHistoricReadings->setInsertDateTime($dt);
+        $sensorHistoricReadings->setInsertDateLowest($dt);
+        $sensorHistoricReadings->setInsertDateHighest($dt);
         $em->getConnection()->beginTransaction();
         try {
             $em->persist($sensorHistoricReadings);
             $em->flush();
-            // Try and commit the transaction
             $em->getConnection()->commit();
 
         } catch (ORMInvalidArgumentException | ORMException $e) {
-//            $this->logger->log('test', [], Logger::CRITICAL);
         }
         $id = $sensorHistoricReadings->getId();
         return $id;

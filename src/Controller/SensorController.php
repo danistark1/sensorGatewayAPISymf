@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Entity\SensorEntity;
+use App\Entity\SensorHistoricReadings;
 use App\Entity\SensorLoggerEntity;
 use App\Entity\SensorMoistureEntity;
 use App\Entity\SensorReportEntity;
@@ -407,6 +408,7 @@ class SensorController extends AbstractController  {
 
             try {
                 // Historic sensor readings.
+                /** @var SensorHistoricReadings $historicReadingsEntity */
                 $historicReadingsEntity = $this->getHistoricReading($parameters, 'temperature');
                 $historicReadingsEntityHumid = $this->getHistoricReading($parameters, 'humidity');
                 $params = [
@@ -425,11 +427,16 @@ class SensorController extends AbstractController  {
                     $params['type'] = 'humidity';
                     $this->sensorHistoricReadingsRepository->save($params);
                 }
+                $dt = SensorDateTime::dateNow('', false);
                 if ($historicReadingsEntity) {
                     if ($parameters['temperature'] < $historicReadingsEntity->getLowestReading()) {
                         $historicReadingsEntity->setLowestReading($parameters['temperature']);
+                        $historicReadingsEntity->setInsertDateLowest($dt);
+                        $historicReadingsEntity->setInsertDateHighest($historicReadingsEntity->getInsertDateHighest());
                     } elseif ($historicReadingsEntity && $parameters['temperature'] > $historicReadingsEntity->getHighestReading()) {
                         $historicReadingsEntity->setHighestReading($parameters['temperature']);
+                        $historicReadingsEntity->setInsertDateHighest($dt);
+                        $historicReadingsEntity->setInsertDateLowest($historicReadingsEntity->getInsertDateLowest());
                     }
                     $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntity);
                 }
@@ -437,8 +444,12 @@ class SensorController extends AbstractController  {
                 if ($historicReadingsEntityHumid) {
                     if ($parameters['humidity'] < $historicReadingsEntityHumid->getLowestReading()) {
                         $historicReadingsEntityHumid->setLowestReading($parameters['humidity']);
+                        $historicReadingsEntityHumid->setInsertDateLowest($dt);
+                        $historicReadingsEntityHumid->setInsertDateHighest($historicReadingsEntityHumid->getInsertDateHighest());
                     } elseif ($parameters['humidity'] > $historicReadingsEntityHumid->getHighestReading()) {
                         $historicReadingsEntityHumid->setHighestReading($parameters['humidity']);
+                        $historicReadingsEntityHumid->setInsertDateHighest($dt);
+                        $historicReadingsEntityHumid->setInsertDateLowest($historicReadingsEntityHumid->getInsertDateLowest());
                     }
                     $this->sensorHistoricReadingsRepository->updateHistoricReadings($historicReadingsEntityHumid);
                 }

@@ -41,7 +41,12 @@ class SensorHistoricReadings
     /**
      * @ORM\Column(type="date", nullable=true)
      */
-    private $insertDateTime;
+    private $insertDateLowest;
+
+    /**
+     * @ORM\Column(type="date", nullable=true)
+     */
+    private $insertDateHighest;
 
     public function getId(): ?int
     {
@@ -96,14 +101,26 @@ class SensorHistoricReadings
         return $this;
     }
 
-    public function getInsertDateTime(): ?\DateTimeInterface
+    public function getInsertDateLowest(): ?\DateTimeInterface
     {
-        return $this->insertDateTime;
+        return $this->insertDateLowest;
     }
 
-    public function setInsertDateTime(\DateTimeInterface $insertDateTime): self
+    public function setInsertDateLowest(\DateTimeInterface $insertDateLowest): self
     {
-        $this->insertDateTime = $insertDateTime;
+        $this->insertDateLowest = $insertDateLowest;
+
+        return $this;
+    }
+
+    public function getInsertDateHighest(): ?\DateTimeInterface
+    {
+        return $this->insertDateHighest;
+    }
+
+    public function setInsertDateHighest(?\DateTimeInterface $insertDateHighest): self
+    {
+        $this->insertDateHighest = $insertDateHighest;
 
         return $this;
     }
