@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 02, 2021 at 09:54 PM
+-- Generation Time: Jan 03, 2022 at 11:53 AM
 -- Server version: 10.3.29-MariaDB-0+deb10u1
 -- PHP Version: 7.3.29-1~deb10u1
 
@@ -33,7 +33,7 @@ INSERT INTO `sensorConfiguration` (`id`, `config_key`, `config_value`, `config_d
 (8, 'weatherReport-notificationsReportEnabled', '1', '2021-03-14', 'readings', NULL),
 (9, 'sensor-config-living_room', '15043', '2021-03-27', 'sensor-config', NULL),
 (10, 'weatherReport-fromEmail', 'vantesla1@gmail.com', '2021-03-27', 'readings', NULL),
-(11, 'weatherReport-toEmail', NULL, '2021-03-27', 'readings', '[""]'),
+(11, 'weatherReport-toEmail', NULL, '2021-03-27', 'readings', '[\"danistark.ca@gmail.com\"]'),
 (12, 'weatherReport-emailTitleDailyReport', 'Sensor Gateway Report', '2021-03-27', 'readings', NULL),
 (13, 'weatherReport-emailTitleNotifications', 'Sensor Gateway Notifications', '2021-03-27', 'readings', NULL),
 (16, 'report_type_notification-firstEmailTime', '06:00:00', '2021-03-27', 'readings', NULL),
@@ -62,7 +62,7 @@ INSERT INTO `sensorConfiguration` (`id`, `config_key`, `config_value`, `config_d
 (42, 'sensor-config-outside', '12154', '2021-03-27', 'sensor-config', NULL),
 (43, 'pruning-report-interval', '1', '2021-03-27', 'pruning', NULL),
 (44, 'pruning-records-interval', '1', '2021-03-27', 'pruning', NULL),
-(45, 'pruning-logs-interval', '1', '2021-03-27', 'pruning', NULL),
+(45, 'pruning-logs-interval', '60', '2021-03-27', 'pruning', NULL),
 (46, 'application-timezone', 'America/Toronto', '2021-03-27', 'app-config', NULL),
 (47, 'logging-enabled', '1', '2021-03-27', 'app-config', NULL),
 (48, 'application-version', '2.0', '2021-03-27', 'app-config', NULL),
@@ -82,8 +82,9 @@ INSERT INTO `sensorConfiguration` (`id`, `config_key`, `config_value`, `config_d
 (62, 'sensor-00e232-upper-moisture', '90', '2021-03-14', 'thresholds', NULL),
 (63, 'email-logging-enabled', '1', '2021-10-30', 'app-config', NULL),
 (64, 'email-logging-level', NULL, '2021-10-30', 'app-config', '[\"warning\",\"critical\",\"info\"]'),
-(65, 'admin-email', '', '2021-10-30', 'app-config', NULL),
-(66, 'logging-level', NULL, '2021-11-02', 'app-config', '[\"critical\",\"debug\",\"warning\",\"info\"]');
+(65, 'admin-email', 'danistark.ca@gmail.com', '2021-10-30', 'app-config', NULL),
+(66, 'logging-level', NULL, '2021-11-02', 'app-config', '[\"critical\",\"debug\",\"warning\",\"info\"]'),
+(139, 'resource-listener-lock', '0', '2021-11-07', 'app-config', NULL);
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
