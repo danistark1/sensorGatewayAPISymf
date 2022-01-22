@@ -55,6 +55,13 @@ class SensorController extends AbstractController  {
     const VALIDATION_STATION_ID = "Invalid station id.";
     const VALIDATION_STATION_PARAMS = "Invalid post parameters.";
 
+    // Irregular readings range.
+
+    const LOWEST_ABNORMAL_TEMP      = 'lowest_abnormal_temp';
+    const LOWEST_ABNORMAL_HUMIDITY  = 'lowest_abnormal_humidity';
+    const HIGHEST_ABNORMAL_TEMP     = 'highest_abnormal_temp';
+    const HIGHEST_ABNORMAL_HUMIDITY = 'highest_abnormal_humidity';
+
     /**
      * @var Response $response
      */
@@ -398,6 +405,9 @@ class SensorController extends AbstractController  {
         $parameters = $this->normalizeData($parameters);
         $violations = $validator->validate($parameters, $stationPostSchema::$schema);
         $valid = $this->validateRequest($violations);
+        $validTemp  = true;
+        $validHumid = true;
+
         if ($valid) {
             //TODO Add custom validation
             $validStationID = $this->validateStationID($parameters['station_id'], __CLASS__ . __FUNCTION__);
@@ -414,14 +424,34 @@ class SensorController extends AbstractController  {
                 $params = [
                     'name' => $parameters['room']
                 ];
+                if ($parameters['temperature'] >  $this->configCache->getConfigKey(self::HIGHEST_ABNORMAL_TEMP) ?? 55 ||
+                    $parameters['temperature'] <  $this->configCache->getConfigKey(self::LOWEST_ABNORMAL_TEMP) ?? -66) {
+                    $this->logger->log("Irregular reading", [
+                        'temperature' => $parameters['temperature'],
+                        'sensor' =>  $parameters['room']], Logger::ALERT);
+                    $validTemp = false;
+
+                }
+                if ($parameters['humidity'] >  $this->configCache->getConfigKey(self::HIGHEST_ABNORMAL_HUMIDITY) ?? 99 ||
+                    $parameters['humidity'] <  $this->configCache->getConfigKey(self::LOWEST_ABNORMAL_HUMIDITY) ?? 5) {
+                    $this->logger->log("Irregular reading", [
+                        'humidity' => $parameters['humidity'],
+                        'sensor' =>  $parameters['room']], Logger::ALERT);
+                    $validHumid = false;
+                }
+                if (!$validTemp || !$validHumid) {
+                    return $this->response;
+                }
 
                 if ($historicReadingsEntity === null) {
+                    // first time, insert lowest/highest equal to received valued
                     $params['lowest_reading'] = $parameters['temperature'];
                     $params['highest_reading'] = $parameters['temperature'];
                     $params['type'] = 'temperature';
                     $this->sensorHistoricReadingsRepository->save($params);
                 }
                 if ($historicReadingsEntityHumid === null) {
+                    // first time, insert lowest/highest equal to received valued
                     $params['lowest_reading'] = $parameters['humidity'];
                     $params['highest_reading'] = $parameters['humidity'];
                     $params['type'] = 'humidity';
