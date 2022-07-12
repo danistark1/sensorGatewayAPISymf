@@ -6,7 +6,9 @@
 <p align="center">
     <img src="https://github.com/danistark1/weatherStationApiSymfony/blob/main/animatedCloud.gif" />
 </p>
-
+ 
+ Test server php -S localhost:8000 -t public/
+ 
 ## 📔 What is it? ##
 
 APIs for WirelessSensorGateway project https://github.com/danistark1/wirelessSensorGateway
