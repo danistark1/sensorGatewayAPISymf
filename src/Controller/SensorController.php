@@ -424,16 +424,16 @@ class SensorController extends AbstractController  {
                 $params = [
                     'name' => $parameters['room']
                 ];
-                if ($parameters['temperature'] >  $this->configCache->getConfigKey(self::HIGHEST_ABNORMAL_TEMP) ?? 55 ||
-                    $parameters['temperature'] <  $this->configCache->getConfigKey(self::LOWEST_ABNORMAL_TEMP) ?? -66) {
+                if ($parameters['temperature'] >  ($this->configCache->getConfigKey(self::HIGHEST_ABNORMAL_TEMP) ?? 55) ||
+                    $parameters['temperature'] <  ($this->configCache->getConfigKey(self::LOWEST_ABNORMAL_TEMP) ?? -50)) {
                     $this->logger->log("Irregular reading", [
                         'temperature' => $parameters['temperature'],
                         'sensor' =>  $parameters['room']], Logger::ALERT);
                     $validTemp = false;
 
                 }
-                if ($parameters['humidity'] >  $this->configCache->getConfigKey(self::HIGHEST_ABNORMAL_HUMIDITY) ?? 99 ||
-                    $parameters['humidity'] <  $this->configCache->getConfigKey(self::LOWEST_ABNORMAL_HUMIDITY) ?? 5) {
+                if ($parameters['humidity'] >  ($this->configCache->getConfigKey(self::HIGHEST_ABNORMAL_HUMIDITY) ?? 100) ||
+                    $parameters['humidity'] <  ($this->configCache->getConfigKey(self::LOWEST_ABNORMAL_HUMIDITY) ?? 5)) {
                     $this->logger->log("Irregular reading", [
                         'humidity' => $parameters['humidity'],
                         'sensor' =>  $parameters['room']], Logger::ALERT);
